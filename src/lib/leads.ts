@@ -235,7 +235,7 @@ export async function saveLead(input: LeadInput): Promise<string | null> {
     });
     return lead.id;
   } catch (error) {
-    console.error("[leads] Failed to persist lead:", error);
+    console.error("[leads] Failed to persist lead:", error instanceof Error ? error.message : error);
     return null;
   }
 }

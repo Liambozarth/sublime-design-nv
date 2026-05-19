@@ -96,7 +96,7 @@ export async function POST(
       to: "info@sublimedesignnv.com",
       subject: `🚨 Bid Requested — ${lead.firstName} ${lead.lastName ?? ""} is ready for a quote`,
       html,
-    }).catch((err) => console.error("[bid-request] email failed:", err));
+    }).catch((err) => console.error("[bid-request] email failed:", err instanceof Error ? err.message : err));
   }
 
   // SMS Tyler
@@ -104,7 +104,7 @@ export async function POST(
   if (tylerPhone) {
     const smsBody = `New bid request from ${lead.firstName} ${lead.lastName ?? ""} — ${serviceLabel}. View lead: ${dashboardUrl}`;
     sendSMS(tylerPhone, smsBody).catch((err) =>
-      console.error("[bid-request] SMS failed:", err),
+      console.error("[bid-request] SMS failed:", err instanceof Error ? err.message : err),
     );
   }
 

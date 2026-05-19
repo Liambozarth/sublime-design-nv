@@ -32,12 +32,9 @@ export async function POST(
 ) {
   const { id } = await params;
 
-  console.log("[upload-route] POST /api/leads/[id]/upload — leadId:", id);
-
   try {
     const lead = await db.intakeLead.findUnique({ where: { id } });
     if (!lead) {
-      console.error("[upload-route] Lead not found:", id);
       return NextResponse.json({ ok: false, error: "Lead not found" }, { status: 404 });
     }
 
@@ -45,15 +42,13 @@ export async function POST(
     try {
       formData = await request.formData();
     } catch (err) {
-      console.error("[upload-route] Failed to parse formData:", err);
+      console.error("[upload-route] Failed to parse formData:", err instanceof Error ? err.message : err);
       return NextResponse.json({ ok: false, error: "Failed to read upload — file may be too large" }, { status: 400 });
     }
 
     const file = formData.get("file") as File | null;
     const type = formData.get("type") as IntakeAssetType | null;
     const caption = formData.get("caption") as string | null;
-
-    console.log("[upload-route] file:", file?.name, "size:", file?.size, "type field:", type);
 
     if (!file || !type) {
       return NextResponse.json(
@@ -103,21 +98,17 @@ export async function POST(
     const buffer = Buffer.from(bytes);
     const resourceType = file.type.startsWith("video/") ? "video" : "image";
 
-    console.log("[upload-route] uploading to Cloudinary, resourceType:", resourceType, "bytes:", buffer.length);
-
     let uploaded;
     try {
       uploaded = await uploadLeadAssetToCloudinary(buffer, id, resourceType);
     } catch (err) {
-      console.error("[upload-route] Cloudinary upload failed:", err);
+      // Inner uploadLeadAsset already logs specifics; just return error response.
       const message = err instanceof Error ? err.message : String(err);
       return NextResponse.json(
         { ok: false, error: `Upload failed: ${message}` },
         { status: 500 },
       );
     }
-
-    console.log("[upload-route] Cloudinary upload success, publicId:", uploaded.publicId);
 
     const asset = await db.intakeLeadAsset.create({
       data: {
@@ -129,11 +120,9 @@ export async function POST(
       },
     });
 
-    console.log("[upload-route] asset saved, assetId:", asset.id);
-
     return NextResponse.json({ ok: true, asset }, { status: 201 });
   } catch (err) {
-    console.error("[upload-route] Unexpected error:", err);
+    console.error("[upload-route] Unexpected error:", err instanceof Error ? err.message : err);
     return NextResponse.json(
       { ok: false, error: "Unexpected server error during upload" },
       { status: 500 },

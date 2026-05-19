@@ -523,7 +523,7 @@ export async function POST(request: Request) {
     });
 
     if (sendError) {
-      console.error("[quote-email] Resend send failed", sendError);
+      console.error("[quote-email] Resend send failed:", sendError instanceof Error ? sendError.message : sendError);
       if (leadId) {
         // Lead was saved; email failed — still OK from user perspective
         return NextResponse.json({ ok: true, leadId }, { status: 200 });
@@ -562,29 +562,15 @@ export async function POST(request: Request) {
       });
 
       if (autoReplyError) {
-        console.error("[quote-autoreply] Failed to send customer auto-reply", {
-          leadId,
-          email: fields.email,
-          error: autoReplyError,
-        });
-      } else {
-        console.info("[quote-autoreply] Customer auto-reply sent", {
-          leadId,
-          email: fields.email,
-          subject: autoReplySubject,
-        });
+        console.error("[quote-autoreply] Failed to send customer auto-reply:", autoReplyError instanceof Error ? autoReplyError.message : autoReplyError);
       }
     } catch (autoReplyError) {
-      console.error("[quote-autoreply] Failed to send customer auto-reply", {
-        leadId,
-        email: fields.email,
-        error: autoReplyError,
-      });
+      console.error("[quote-autoreply] Failed to send customer auto-reply:", autoReplyError instanceof Error ? autoReplyError.message : autoReplyError);
     }
 
     return NextResponse.json({ ok: true, leadId }, { status: 200 });
   } catch (error) {
-    console.error("[quote-email] Unexpected error", error);
+    console.error("[quote-email] Unexpected error:", error instanceof Error ? error.message : error);
     return jsonServerError("We couldn’t submit your request right now. Please try again or call us directly.");
   }
 }

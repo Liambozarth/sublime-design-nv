@@ -31,12 +31,11 @@ export async function uploadLeadAssetToCloudinary(
   try {
     cloudinary = getCloudinary();
   } catch (err) {
-    console.error("[uploadLeadAsset] getCloudinary() failed — check CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET env vars:", err);
+    console.error("[uploadLeadAsset] Cloudinary config failed:", err instanceof Error ? err.message : err);
     throw err;
   }
 
   const folder = `Sublime/IntakeLeads/${leadId}`;
-  console.log("[uploadLeadAsset] uploading to folder:", folder, "resourceType:", resourceType, "bufferSize:", fileBuffer.length);
 
   const result = await new Promise<CloudinaryUploadApiResult>((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
@@ -47,7 +46,7 @@ export async function uploadLeadAssetToCloudinary(
       },
       (error, result) => {
         if (error || !result) {
-          console.error("[uploadLeadAsset] Cloudinary upload_stream callback error:", error);
+          console.error("[uploadLeadAsset] Cloudinary upload failed:", error instanceof Error ? error.message : error);
           return reject(error ?? new Error("Upload failed — no result returned"));
         }
         resolve(result as CloudinaryUploadApiResult);
@@ -55,8 +54,6 @@ export async function uploadLeadAssetToCloudinary(
     );
     uploadStream.end(fileBuffer);
   });
-
-  console.log("[uploadLeadAsset] upload complete, publicId:", result.public_id);
 
   return {
     publicId: result.public_id,

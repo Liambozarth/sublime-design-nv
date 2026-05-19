@@ -109,8 +109,8 @@ Format your response as valid JSON only, no markdown:
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    console.error("OpenAI error:", error);
+    const error = (await response.json().catch(() => ({}))) as { error?: { message?: string } };
+    console.error("[generate-description] OpenAI request failed:", error?.error?.message ?? response.status);
     return NextResponse.json({ error: "Failed to generate description" }, { status: 500 });
   }
 

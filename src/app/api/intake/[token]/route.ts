@@ -178,7 +178,7 @@ export async function PATCH(
   // Notify Tyler when intake is complete
   if (body.status === "INTAKE_COMPLETE" && updated) {
     notifyTylerIntakeComplete(updated).catch((err) =>
-      console.error("[intake-patch] failed to send Tyler notification:", err),
+      console.error("[intake-patch] failed to send Tyler notification:", err instanceof Error ? err.message : err),
     );
   }
 
