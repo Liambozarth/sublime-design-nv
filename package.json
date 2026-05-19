@@ -17,6 +17,8 @@
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.6.0",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
     "cloudinary": "^2.9.0",
     "clsx": "^2.1.1",
     "heic2any": "^0.0.4",

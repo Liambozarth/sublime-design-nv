@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { checkKioskRateLimit, getClientIdentifier } from "@/lib/rateLimit";
 import type { IntakeServiceType } from "@prisma/client";
 
 const VALID_SERVICE_TYPES: IntakeServiceType[] = [
@@ -34,6 +35,22 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { ok: false, error: "Invalid serviceType" },
       { status: 400 },
+    );
+  }
+
+  const rl = await checkKioskRateLimit(`kiosk:${getClientIdentifier(request)}`);
+  if (!rl.success) {
+    return NextResponse.json(
+      { ok: false, error: "RATE_LIMITED", detail: "Too many requests. Please wait a minute and try again." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil((rl.reset - Date.now()) / 1000)),
+          "X-RateLimit-Limit": String(rl.limit),
+          "X-RateLimit-Remaining": String(rl.remaining),
+          "X-RateLimit-Reset": String(rl.reset),
+        },
+      },
     );
   }
 

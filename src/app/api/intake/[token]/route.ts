@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { db } from "@/lib/db";
 import { SITE } from "@/lib/constants";
+import { checkRateLimit } from "@/lib/rateLimit";
 import type { Prisma } from "@prisma/client";
 
 function escapeHtml(s: string) {
@@ -122,6 +123,22 @@ export async function PATCH(
   { params }: { params: Promise<{ token: string }> },
 ) {
   const { token } = await params;
+
+  const rl = await checkRateLimit(`intake:${token}`);
+  if (!rl.success) {
+    return NextResponse.json(
+      { ok: false, error: "RATE_LIMITED", detail: "Too many requests. Please wait a minute and try again." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil((rl.reset - Date.now()) / 1000)),
+          "X-RateLimit-Limit": String(rl.limit),
+          "X-RateLimit-Remaining": String(rl.remaining),
+          "X-RateLimit-Reset": String(rl.reset),
+        },
+      },
+    );
+  }
 
   const lead = await db.intakeLead.findUnique({ where: { token } });
   if (!lead) {

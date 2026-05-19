@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { uploadLeadAssetToCloudinary } from "@/lib/cloudinary/uploadLeadAsset";
+import { checkRateLimit, getClientIdentifier } from "@/lib/rateLimit";
 import type { IntakeAssetType } from "@prisma/client";
 
 const VALID_ASSET_TYPES: IntakeAssetType[] = [
@@ -79,6 +80,22 @@ export async function POST(
       return NextResponse.json(
         { ok: false, error: "INVALID_MIME", detail: `MIME type ${file.type} not allowed` },
         { status: 400 },
+      );
+    }
+
+    const rl = await checkRateLimit(`upload:${getClientIdentifier(request)}`);
+    if (!rl.success) {
+      return NextResponse.json(
+        { ok: false, error: "RATE_LIMITED", detail: "Too many requests. Please wait a minute and try again." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(Math.ceil((rl.reset - Date.now()) / 1000)),
+            "X-RateLimit-Limit": String(rl.limit),
+            "X-RateLimit-Remaining": String(rl.remaining),
+            "X-RateLimit-Reset": String(rl.reset),
+          },
+        },
       );
     }
 

@@ -5,6 +5,7 @@ import { saveLead } from "@/lib/leads";
 import { SITE } from "@/lib/constants";
 import { getBusinessSettings } from "@/lib/settings";
 import { getRecentPublicProjectLinks } from "@/lib/projectRecords.server";
+import { checkRateLimit, getClientIdentifier } from "@/lib/rateLimit";
 import {
   buildQuoteSubject,
   getQuoteSpamSignals,
@@ -399,6 +400,22 @@ export async function POST(request: Request) {
     const spamSignals = getQuoteSpamSignals(normalized);
     if (spamSignals.honeypotTriggered || spamSignals.submittedTooFast) {
       return NextResponse.json({ ok: true, ignored: true }, { status: 200 });
+    }
+
+    const rl = await checkRateLimit(`quote:${getClientIdentifier(request)}`);
+    if (!rl.success) {
+      return NextResponse.json(
+        { ok: false, error: "RATE_LIMITED", detail: "Too many requests. Please wait a minute and try again." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(Math.ceil((rl.reset - Date.now()) / 1000)),
+            "X-RateLimit-Limit": String(rl.limit),
+            "X-RateLimit-Remaining": String(rl.remaining),
+            "X-RateLimit-Reset": String(rl.reset),
+          },
+        },
+      );
     }
 
     // Persist lead (soft-fail)
