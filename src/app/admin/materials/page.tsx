@@ -202,20 +202,47 @@ export default function AdminMaterialsPage() {
 
   async function deleteMfg(id: string) {
     if (!confirm("Delete this manufacturer?")) return;
-    await fetch(`/api/admin/materials/manufacturers/${id}`, { method: "DELETE" });
-    await load();
+    try {
+      const res = await fetch(`/api/admin/materials/manufacturers/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        alert(mapError(data.error, "manufacturer"));
+        return;
+      }
+      await load();
+    } catch {
+      alert("Network error. Please try again.");
+    }
   }
 
   async function deleteSup(id: string) {
     if (!confirm("Delete this supplier?")) return;
-    await fetch(`/api/admin/materials/suppliers/${id}`, { method: "DELETE" });
-    await load();
+    try {
+      const res = await fetch(`/api/admin/materials/suppliers/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        alert(mapError(data.error, "supplier"));
+        return;
+      }
+      await load();
+    } catch {
+      alert("Network error. Please try again.");
+    }
   }
 
   async function deleteMat(id: string) {
     if (!confirm("Delete this material?")) return;
-    await fetch(`/api/admin/materials/${id}`, { method: "DELETE" });
-    await load();
+    try {
+      const res = await fetch(`/api/admin/materials/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        alert(mapError(data.error, "material"));
+        return;
+      }
+      await load();
+    } catch {
+      alert("Network error. Please try again.");
+    }
   }
 
   function mapError(code: string | undefined, resource: "material" | "manufacturer" | "supplier"): string {
@@ -223,6 +250,7 @@ export default function AdminMaterialsPage() {
       case "NOT_FOUND": return `This ${resource} was deleted by someone else. Refresh the page.`;
       case "UNIQUE_CONSTRAINT": return `Another ${resource} already uses that slug or name. Try a different one.`;
       case "INVALID_NAME": return "The name must contain at least one letter or number.";
+      case "IN_USE": return `This ${resource} is in use by other records and cannot be deleted. Remove the references first.`;
       case "NO_FIELDS": return "No changes to save.";
       case "INVALID_JSON": return "Something went wrong. Please try again.";
     }

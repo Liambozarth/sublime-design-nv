@@ -8,7 +8,21 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
 
   const { id } = params;
 
-  await prisma.supplier.delete({ where: { id } });
+  try {
+    await prisma.supplier.delete({ where: { id } });
+  } catch (err: unknown) {
+    const code = (err as { code?: string })?.code;
+    if (code === "P2003") {
+      return NextResponse.json(
+        { ok: false, error: "IN_USE", detail: "This supplier is referenced by other records and cannot be deleted." },
+        { status: 409 },
+      );
+    }
+    if (code === "P2025") {
+      return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
+    }
+    throw err;
+  }
 
   return NextResponse.json({ success: true });
 }
