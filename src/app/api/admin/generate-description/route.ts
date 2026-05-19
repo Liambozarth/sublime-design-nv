@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdminApiSession, unauthorizedResponse } from "@/lib/auth";
 
 type ColorEntry = {
   label: string;
@@ -6,6 +7,9 @@ type ColorEntry = {
 };
 
 export async function POST(req: NextRequest) {
+  const session = await requireAdminApiSession();
+  if (!session) return unauthorizedResponse();
+
   const body = await req.json() as {
     primaryService?: string;
     secondaryServices?: string[];

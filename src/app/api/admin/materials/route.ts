@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db as prisma } from "@/lib/db";
+import { requireAdminApiSession, unauthorizedResponse } from "@/lib/auth";
 
 export async function GET() {
+  const session = await requireAdminApiSession();
+  if (!session) return unauthorizedResponse();
+
   const [materials, manufacturers, suppliers, categories] = await Promise.all([
     prisma.material.findMany({
       include: {
@@ -26,6 +30,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const session = await requireAdminApiSession();
+  if (!session) return unauthorizedResponse();
+
   const body = await req.json();
   const { name, slug, sku, description, categoryId, manufacturerId, grade, sheen, finish, thickness, isPublic } = body;
 
