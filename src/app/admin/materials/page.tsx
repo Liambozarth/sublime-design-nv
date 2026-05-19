@@ -93,6 +93,12 @@ export default function AdminMaterialsPage() {
   const [editSupForm, setEditSupForm] = useState<SupEditForm>({ name: "", slug: "", website: "", phone: "", address: "", city: "", state: "", description: "", logoUrl: "" });
   const [editSupError, setEditSupError] = useState<string | null>(null);
 
+  // Create-form errors — separate slots per section so an error in one Add
+  // card doesn't bleed into another.
+  const [createMatError, setCreateMatError] = useState<string | null>(null);
+  const [createMfgError, setCreateMfgError] = useState<string | null>(null);
+  const [createSupError, setCreateSupError] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -121,32 +127,77 @@ export default function AdminMaterialsPage() {
 
   async function saveMfg() {
     if (!mfgForm.name.trim()) return;
+    setCreateMfgError(null);
     setSaving(true);
-    await fetch("/api/admin/materials/manufacturers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(mfgForm) });
-    setSaving(false);
-    setAddMfg(false);
-    setMfgForm({ name: "", website: "" });
-    await load();
+    try {
+      const res = await fetch("/api/admin/materials/manufacturers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(mfgForm),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setCreateMfgError(mapError(data.error, "manufacturer"));
+        return;
+      }
+      setAddMfg(false);
+      setMfgForm({ name: "", website: "" });
+      await load();
+    } catch {
+      setCreateMfgError("Network error. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function saveSup() {
     if (!supForm.name.trim()) return;
+    setCreateSupError(null);
     setSaving(true);
-    await fetch("/api/admin/materials/suppliers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(supForm) });
-    setSaving(false);
-    setAddSup(false);
-    setSupForm({ name: "", city: "Las Vegas", state: "NV", website: "", phone: "" });
-    await load();
+    try {
+      const res = await fetch("/api/admin/materials/suppliers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(supForm),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setCreateSupError(mapError(data.error, "supplier"));
+        return;
+      }
+      setAddSup(false);
+      setSupForm({ name: "", city: "Las Vegas", state: "NV", website: "", phone: "" });
+      await load();
+    } catch {
+      setCreateSupError("Network error. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function saveMat() {
     if (!matForm.name.trim() || !matForm.categoryId || !matForm.manufacturerId) return;
+    setCreateMatError(null);
     setSaving(true);
-    await fetch("/api/admin/materials", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(matForm) });
-    setSaving(false);
-    setAddMat(false);
-    setMatForm({ name: "", sku: "", categoryId: "", manufacturerId: "", grade: "", sheen: "", thickness: "", isPublic: true });
-    await load();
+    try {
+      const res = await fetch("/api/admin/materials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(matForm),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setCreateMatError(mapError(data.error, "material"));
+        return;
+      }
+      setAddMat(false);
+      setMatForm({ name: "", sku: "", categoryId: "", manufacturerId: "", grade: "", sheen: "", thickness: "", isPublic: true });
+      await load();
+    } catch {
+      setCreateMatError("Network error. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function deleteMfg(id: string) {
@@ -167,14 +218,20 @@ export default function AdminMaterialsPage() {
     await load();
   }
 
-  function mapEditError(code: string | undefined, resource: "material" | "manufacturer" | "supplier"): string {
+  function mapError(code: string | undefined, resource: "material" | "manufacturer" | "supplier"): string {
     switch (code) {
       case "NOT_FOUND": return `This ${resource} was deleted by someone else. Refresh the page.`;
-      case "UNIQUE_CONSTRAINT": return `Another ${resource} already uses that slug. Try a different one.`;
+      case "UNIQUE_CONSTRAINT": return `Another ${resource} already uses that slug or name. Try a different one.`;
+      case "INVALID_NAME": return "The name must contain at least one letter or number.";
       case "NO_FIELDS": return "No changes to save.";
       case "INVALID_JSON": return "Something went wrong. Please try again.";
-      default: return "Could not save changes. Please refresh the page.";
     }
+    // POST handlers still return human-readable "X is required" strings.
+    // Map them generically instead of leaking server text to the UI.
+    if (typeof code === "string" && code.includes("required")) {
+      return "Please fill in all required fields.";
+    }
+    return "Could not save. Please refresh the page and try again.";
   }
 
   function openEditMat(mat: Material) {
@@ -223,7 +280,7 @@ export default function AdminMaterialsPage() {
     setSaving(false);
     if (!res.ok) {
       const data = (await res.json().catch(() => ({}))) as { error?: string };
-      setEditMatError(mapEditError(data.error, "material"));
+      setEditMatError(mapError(data.error, "material"));
       return;
     }
     setEditingMat(null);
@@ -271,7 +328,7 @@ export default function AdminMaterialsPage() {
     setSaving(false);
     if (!res.ok) {
       const data = (await res.json().catch(() => ({}))) as { error?: string };
-      setEditMfgError(mapEditError(data.error, "manufacturer"));
+      setEditMfgError(mapError(data.error, "manufacturer"));
       return;
     }
     setEditingMfg(null);
@@ -323,7 +380,7 @@ export default function AdminMaterialsPage() {
     setSaving(false);
     if (!res.ok) {
       const data = (await res.json().catch(() => ({}))) as { error?: string };
-      setEditSupError(mapEditError(data.error, "supplier"));
+      setEditSupError(mapError(data.error, "supplier"));
       return;
     }
     setEditingSup(null);
@@ -364,7 +421,7 @@ export default function AdminMaterialsPage() {
           <div className="mt-6">
             <div className="mb-4 flex items-center justify-between">
               <p className="font-ui text-sm text-gray-mid">{materials.length} material{materials.length !== 1 ? "s" : ""}</p>
-              <button type="button" onClick={() => setAddMat(!addMat)} className={btnAdd}>+ Add Material</button>
+              <button type="button" onClick={() => { setAddMat(!addMat); setCreateMatError(null); }} className={btnAdd}>+ Add Material</button>
             </div>
 
             {editingMat && (
@@ -417,9 +474,10 @@ export default function AdminMaterialsPage() {
                     Show on public site
                   </label>
                 </div>
+                {createMatError && <p className="mt-3 font-ui text-sm text-red">{createMatError}</p>}
                 <div className="mt-4 flex gap-2">
                   <button type="button" onClick={saveMat} disabled={saving} className={btnSave}>{saving ? "Saving..." : "Save Material"}</button>
-                  <button type="button" onClick={() => setAddMat(false)} className={btnCancel}>Cancel</button>
+                  <button type="button" onClick={() => { setAddMat(false); setCreateMatError(null); }} className={btnCancel}>Cancel</button>
                 </div>
               </div>
             )}
@@ -471,7 +529,7 @@ export default function AdminMaterialsPage() {
           <div className="mt-6">
             <div className="mb-4 flex items-center justify-between">
               <p className="font-ui text-sm text-gray-mid">{manufacturers.length} manufacturer{manufacturers.length !== 1 ? "s" : ""}</p>
-              <button type="button" onClick={() => setAddMfg(!addMfg)} className={btnAdd}>+ Add Manufacturer</button>
+              <button type="button" onClick={() => { setAddMfg(!addMfg); setCreateMfgError(null); }} className={btnAdd}>+ Add Manufacturer</button>
             </div>
 
             {editingMfg && (
@@ -501,9 +559,10 @@ export default function AdminMaterialsPage() {
                   <input className={inputCls} placeholder="Name *" value={mfgForm.name} onChange={(e) => setMfgForm((f) => ({ ...f, name: e.target.value }))} />
                   <input className={inputCls} placeholder="Website URL" value={mfgForm.website} onChange={(e) => setMfgForm((f) => ({ ...f, website: e.target.value }))} />
                 </div>
+                {createMfgError && <p className="mt-3 font-ui text-sm text-red">{createMfgError}</p>}
                 <div className="mt-4 flex gap-2">
                   <button type="button" onClick={saveMfg} disabled={saving} className={btnSave}>{saving ? "Saving..." : "Save"}</button>
-                  <button type="button" onClick={() => setAddMfg(false)} className={btnCancel}>Cancel</button>
+                  <button type="button" onClick={() => { setAddMfg(false); setCreateMfgError(null); }} className={btnCancel}>Cancel</button>
                 </div>
               </div>
             )}
@@ -551,7 +610,7 @@ export default function AdminMaterialsPage() {
           <div className="mt-6">
             <div className="mb-4 flex items-center justify-between">
               <p className="font-ui text-sm text-gray-mid">{suppliers.length} supplier{suppliers.length !== 1 ? "s" : ""}</p>
-              <button type="button" onClick={() => setAddSup(!addSup)} className={btnAdd}>+ Add Supplier</button>
+              <button type="button" onClick={() => { setAddSup(!addSup); setCreateSupError(null); }} className={btnAdd}>+ Add Supplier</button>
             </div>
 
             {editingSup && (
@@ -588,9 +647,10 @@ export default function AdminMaterialsPage() {
                   <input className={inputCls} placeholder="State" value={supForm.state} onChange={(e) => setSupForm((f) => ({ ...f, state: e.target.value }))} />
                   <input className={inputCls} placeholder="Phone" value={supForm.phone} onChange={(e) => setSupForm((f) => ({ ...f, phone: e.target.value }))} />
                 </div>
+                {createSupError && <p className="mt-3 font-ui text-sm text-red">{createSupError}</p>}
                 <div className="mt-4 flex gap-2">
                   <button type="button" onClick={saveSup} disabled={saving} className={btnSave}>{saving ? "Saving..." : "Save"}</button>
-                  <button type="button" onClick={() => setAddSup(false)} className={btnCancel}>Cancel</button>
+                  <button type="button" onClick={() => { setAddSup(false); setCreateSupError(null); }} className={btnCancel}>Cancel</button>
                 </div>
               </div>
             )}
