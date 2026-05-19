@@ -9,6 +9,22 @@ const VALID_ASSET_TYPES: IntakeAssetType[] = [
   "VIDEO",
 ];
 
+// MIME allowlist + size cap. file.type is client-supplied so this is a coarse
+// filter, not magic-number verification — Cloudinary's preset is the second
+// line of defense. The cap below also protects against unbounded request bodies.
+const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB
+const ALLOWED_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+  "video/mp4",
+  "video/quicktime",
+  "video/webm",
+]);
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -48,6 +64,20 @@ export async function POST(
     if (!VALID_ASSET_TYPES.includes(type)) {
       return NextResponse.json(
         { ok: false, error: `type must be one of: ${VALID_ASSET_TYPES.join(", ")}` },
+        { status: 400 },
+      );
+    }
+
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      return NextResponse.json(
+        { ok: false, error: "FILE_TOO_LARGE", detail: `File size ${file.size} bytes exceeds 25 MB limit` },
+        { status: 400 },
+      );
+    }
+
+    if (!ALLOWED_MIME_TYPES.has(file.type)) {
+      return NextResponse.json(
+        { ok: false, error: "INVALID_MIME", detail: `MIME type ${file.type} not allowed` },
         { status: 400 },
       );
     }
