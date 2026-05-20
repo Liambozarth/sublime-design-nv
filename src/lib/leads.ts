@@ -2,6 +2,8 @@ import { LeadClassification, LeadStatus, Prisma } from "@prisma/client";
 
 export type LeadInput = {
   name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   service: string;
@@ -212,6 +214,8 @@ export async function saveLead(input: LeadInput): Promise<string | null> {
     const lead = await db.lead.create({
       data: {
         name: input.name,
+        firstName: input.firstName,
+        lastName: input.lastName,
         email: input.email,
         phone: input.phone,
         service: input.service,

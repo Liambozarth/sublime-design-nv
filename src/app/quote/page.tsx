@@ -10,7 +10,6 @@ import { PhoneInput } from "@/components/ui/PhoneInput";
 import {
   applyQuotePrefillToForm,
   BUDGET_OPTIONS,
-  hasVisibleQuoteContext,
   QUOTE_DEFAULT_FORM,
   TIMELINE_OPTIONS,
   getQuoteVisibleContext,
@@ -557,7 +556,8 @@ export default function QuotePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: form.name,
+          firstName: form.firstName,
+          lastName: form.lastName,
           email: form.email,
           phone: form.phone,
           service: form.service,
@@ -634,8 +634,6 @@ export default function QuotePage() {
     );
   }
 
-  const visibleContext = getQuoteVisibleContext(quoteContext);
-
   return (
     <main className="bg-cream pt-28 pb-20">
       <div className="mx-auto max-w-2xl px-4 md:px-8">
@@ -646,15 +644,6 @@ export default function QuotePage() {
           step for pricing, scheduling, or an on-site visit.
         </p>
         <p className="mt-2 text-sm text-gray-mid">Most homeowners hear back within one business day.</p>
-        {hasVisibleQuoteContext(quoteContext) ? (
-          <div className="mt-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <p className="font-ui text-[10px] uppercase tracking-[0.18em] text-red">Context</p>
-            <p className="mt-2 text-sm text-charcoal">{visibleContext.summary}</p>
-            {visibleContext.detail ? (
-              <p className="mt-1 text-sm text-gray-mid">{visibleContext.detail}</p>
-            ) : null}
-          </div>
-        ) : null}
         {colorPrefill ? (
           <div className="mt-4 flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
             <p className="font-ui text-[10px] uppercase tracking-[0.18em] text-red shrink-0">Color</p>
@@ -686,28 +675,49 @@ export default function QuotePage() {
             <SectionLabel>Contact Info</SectionLabel>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div id="field-name">
+              <div id="field-firstName">
                 <label className="block text-sm font-medium text-charcoal">
-                  Full Name <span className="text-red">*</span>
+                  First Name <span className="text-red">*</span>
                 </label>
                 <input
-                  ref={(node) => setFieldRef("name", node)}
+                  ref={(node) => setFieldRef("firstName", node)}
                   type="text"
                   required
-                  autoComplete="name"
-                  value={form.name}
-                  onChange={(e) => set("name", e.target.value)}
-                  aria-invalid={Boolean(errors.name)}
-                  aria-describedby={errors.name ? "error-name" : undefined}
-                  className={inputClass(!!errors.name)}
-                  placeholder="Jane Smith"
+                  autoComplete="given-name"
+                  value={form.firstName}
+                  onChange={(e) => set("firstName", e.target.value)}
+                  aria-invalid={Boolean(errors.firstName)}
+                  aria-describedby={errors.firstName ? "error-firstName" : undefined}
+                  className={inputClass(!!errors.firstName)}
+                  placeholder="Jane"
                 />
-                <div id="error-name">
-                  <FieldError msg={errors.name} />
+                <div id="error-firstName">
+                  <FieldError msg={errors.firstName} />
                 </div>
               </div>
 
-              <div id="field-email">
+              <div id="field-lastName">
+                <label className="block text-sm font-medium text-charcoal">
+                  Last Name <span className="text-red">*</span>
+                </label>
+                <input
+                  ref={(node) => setFieldRef("lastName", node)}
+                  type="text"
+                  required
+                  autoComplete="family-name"
+                  value={form.lastName}
+                  onChange={(e) => set("lastName", e.target.value)}
+                  aria-invalid={Boolean(errors.lastName)}
+                  aria-describedby={errors.lastName ? "error-lastName" : undefined}
+                  className={inputClass(!!errors.lastName)}
+                  placeholder="Smith"
+                />
+                <div id="error-lastName">
+                  <FieldError msg={errors.lastName} />
+                </div>
+              </div>
+
+              <div id="field-email" className="sm:col-span-2">
                 <label className="block text-sm font-medium text-charcoal">
                   Email <span className="text-red">*</span>
                 </label>

@@ -18,7 +18,8 @@ export const BUDGET_OPTIONS = [
 ] as const;
 
 export type QuoteFormFields = {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   service: string;
@@ -31,6 +32,11 @@ export type QuoteFormFields = {
 
 export type QuoteFieldName = keyof QuoteFormFields;
 export type QuoteFieldErrors = Partial<Record<QuoteFieldName, string>>;
+
+// Server-side composed shape: client sends firstName + lastName; the API
+// composes `name` from them so existing email / SMS / admin code reading
+// lead.name keeps working unchanged.
+export type QuoteSubmittedFields = QuoteFormFields & { name: string };
 
 export type QuoteRequestPayload = QuoteFormFields & {
   photoUrls: string[];
@@ -49,7 +55,7 @@ export type QuoteRequestPayload = QuoteFormFields & {
 };
 
 export type QuoteValidatedPayload = {
-  fields: QuoteFormFields;
+  fields: QuoteSubmittedFields;
   photoUrls: string[];
   utmSource?: string;
   utmMedium?: string;
@@ -76,7 +82,8 @@ const MAX_MESSAGE_LENGTH = 2000;
 const MAX_NAME_LENGTH = 120;
 
 export const QUOTE_DEFAULT_FORM: QuoteFormFields = {
-  name: "",
+  firstName: "",
+  lastName: "",
   email: "",
   phone: "",
   service: "",
@@ -165,8 +172,8 @@ export function isValidBudget(value: string) {
 export function validateQuoteFields(fields: QuoteFormFields): QuoteFieldErrors {
   const errors: QuoteFieldErrors = {};
 
-  if (!fields.name) errors.name = "Please enter your full name.";
-  else if (fields.name.length < 2) errors.name = "Please enter your full name.";
+  if (!fields.firstName.trim()) errors.firstName = "Please enter your first name.";
+  if (!fields.lastName.trim()) errors.lastName = "Please enter your last name.";
 
   if (!fields.email) errors.email = "Please enter your email address.";
   else if (!isValidEmail(fields.email)) errors.email = "Please enter a valid email address.";
@@ -193,8 +200,14 @@ export function validateQuoteFields(fields: QuoteFormFields): QuoteFieldErrors {
 export function normalizeQuoteRequestPayload(payload: unknown): QuoteValidatedPayload {
   const body = typeof payload === "object" && payload !== null ? (payload as Record<string, unknown>) : {};
 
-  const fields: QuoteFormFields = {
-    name: sanitizeShortText(body.name, MAX_NAME_LENGTH),
+  const firstName = sanitizeShortText(body.firstName, MAX_NAME_LENGTH);
+  const lastName = sanitizeShortText(body.lastName, MAX_NAME_LENGTH);
+  const composedName = `${firstName} ${lastName}`.trim();
+
+  const fields: QuoteSubmittedFields = {
+    firstName,
+    lastName,
+    name: composedName,
     email: sanitizeShortText(body.email, 160).toLowerCase(),
     phone: sanitizePhone(body.phone),
     service: sanitizeSlug(body.service),
@@ -271,7 +284,7 @@ export function hasVisibleQuoteContext(context: QuotePrefillContext) {
   return Boolean(visible.summary || visible.detail);
 }
 
-export function buildQuoteSubject(fields: Pick<QuoteFormFields, "name" | "service" | "location">, sourceType?: string, projectTitle?: string) {
+export function buildQuoteSubject(fields: { firstName: string; service: string; location: string }, sourceType?: string, projectTitle?: string) {
   const serviceLabel =
     fields.service === "other"
       ? "General Inquiry"
@@ -280,7 +293,7 @@ export function buildQuoteSubject(fields: Pick<QuoteFormFields, "name" | "servic
   const parts = ["Quote Request"];
   if (projectTitle) parts.push(projectTitle);
   else parts.push(serviceLabel);
-  if (fields.name) parts.push(fields.name.split(" ")[0]);
+  if (fields.firstName) parts.push(fields.firstName);
   if (fields.location) parts.push(fields.location);
   else if (sourceType === "project-page") parts.push("Project Page Inquiry");
   return parts.join(" — ");

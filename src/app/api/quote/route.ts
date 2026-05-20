@@ -421,6 +421,8 @@ export async function POST(request: Request) {
     // Persist lead (soft-fail)
     const leadId = await saveLead({
       name: fields.name,
+      firstName: fields.firstName,
+      lastName: fields.lastName,
       email: fields.email,
       phone: fields.phone,
       service: fields.service,
@@ -482,7 +484,7 @@ export async function POST(request: Request) {
 
     const subject = buildQuoteSubject(
       {
-        name: fields.name,
+        firstName: fields.firstName,
         service: fields.service,
         location: fields.location,
       },
