@@ -94,7 +94,11 @@ export default function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
             </button>
 
             {servicesOpen ? (
-              <div className="absolute left-1/2 top-full mt-3 w-[28rem] -translate-x-1/2 rounded-sm border border-gray-warm bg-white p-4 shadow-lg">
+              // before:* adds a 12px invisible bridge between the button and the panel so
+              // the cursor stays inside the parent's hover hit-area while crossing the mt-3
+              // gap. Without it, onMouseLeave fires mid-traverse and the panel closes
+              // before the user can click anything.
+              <div className="absolute left-1/2 top-full mt-3 w-[28rem] -translate-x-1/2 rounded-sm border border-gray-warm bg-white p-4 shadow-lg before:absolute before:-top-3 before:left-0 before:right-0 before:h-3 before:content-['']">
                 <div className="grid grid-cols-2 gap-2">
                   {ACTIVE_SERVICES.map((service) => (
                     <Link
