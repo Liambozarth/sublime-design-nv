@@ -7,6 +7,7 @@ import {
   publishInstagramCarousel,
   postToFacebook,
 } from "@/lib/social/meta";
+import { createPin } from "@/lib/social/pinterest";
 
 export const dynamic = "force-dynamic";
 
@@ -42,13 +43,18 @@ export async function GET(request: NextRequest) {
   const results: { id: string; status: string; error?: string }[] = [];
 
   for (const post of pendingPosts) {
-    const platform = post.platform as "instagram" | "facebook" | "both";
+    const platform = post.platform as "instagram" | "facebook" | "both" | "pinterest";
     const fullCaption = post.hashtags ? `${post.caption}\n\n${post.hashtags}` : post.caption;
 
     // Skip if credentials not yet configured
     const needsIg = platform === "instagram" || platform === "both";
     const needsFb = platform === "facebook" || platform === "both";
-    if ((needsIg && !SOCIAL_ENABLED.instagram) || (needsFb && !SOCIAL_ENABLED.facebook)) {
+    const needsPinterest = platform === "pinterest";
+    if (
+      (needsIg && !SOCIAL_ENABLED.instagram) ||
+      (needsFb && !SOCIAL_ENABLED.facebook) ||
+      (needsPinterest && !SOCIAL_ENABLED.pinterest)
+    ) {
       results.push({ id: post.id, status: "skipped", error: "Credentials not configured." });
       continue;
     }
@@ -88,6 +94,22 @@ export async function GET(request: NextRequest) {
 
       if (needsFb) {
         const result = await postToFacebook(fullCaption, firstImageUrl);
+        postIds.push(result.id ?? "");
+      }
+
+      if (needsPinterest) {
+        const boardId = post.pinterestBoardId ?? post.boardId;
+        if (!boardId) throw new Error("Pinterest post requires a board.");
+        if (!firstImageUrl) throw new Error("Pinterest post requires at least one image.");
+
+        const result = await createPin({
+          boardId,
+          title: post.pinTitle ?? post.caption.slice(0, 100),
+          description: post.caption,
+          imageUrl: firstImageUrl,
+          link: post.pinUrl ?? "",
+          altText: post.altText ?? undefined,
+        });
         postIds.push(result.id ?? "");
       }
 
