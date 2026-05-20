@@ -309,6 +309,8 @@ model Lead {
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
   name            String
+  firstName       String     @default("")
+  lastName        String     @default("")
   email           String
   phone           String
   service         String
