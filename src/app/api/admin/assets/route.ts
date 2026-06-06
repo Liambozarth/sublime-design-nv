@@ -30,6 +30,7 @@ type CreateAssetBody = {
   location?: string;
   primaryServiceSlug?: string;
   serviceMetadata?: unknown;
+  quickUpload?: boolean;
   gpsLat?: number | null;
   gpsLng?: number | null;
   areaSlug?: string | null;
@@ -241,30 +242,49 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const primaryServiceSlug = body.primaryServiceSlug?.trim()
+  const isQuickUpload = body.quickUpload === true;
+
+  const requestedPrimary = body.primaryServiceSlug?.trim()
     ? body.primaryServiceSlug.trim()
     : normalizeServiceTagSlugs(body.tagSlugs)[0];
 
-  if (!primaryServiceSlug || !isServiceTagSlug(primaryServiceSlug)) {
-    return NextResponse.json(
-      { ok: false, error: "A valid primary service is required." },
-      { status: 400 },
-    );
-  }
+  // Quick-upload mode (AI tags, review later): allow a null/unknown primary service and
+  // skip metadata validation — the approve step in /admin/review enforces both. New rows
+  // default to reviewStatus PENDING and land in the review queue.
+  let primaryServiceSlug: string | null = requestedPrimary ?? null;
+  let metadataValue: Prisma.InputJsonValue = {};
 
-  const metadataValidation = validateServiceAssetMetadata(
-    primaryServiceSlug,
-    body.serviceMetadata,
-  );
-  if (!metadataValidation.ok) {
-    return NextResponse.json(
-      { ok: false, error: metadataValidation.errors.join(" ") },
-      { status: 400 },
+  if (isQuickUpload) {
+    if (primaryServiceSlug && !isServiceTagSlug(primaryServiceSlug)) {
+      primaryServiceSlug = null;
+    }
+  } else {
+    if (!primaryServiceSlug || !isServiceTagSlug(primaryServiceSlug)) {
+      return NextResponse.json(
+        { ok: false, error: "A valid primary service is required." },
+        { status: 400 },
+      );
+    }
+
+    const metadataValidation = validateServiceAssetMetadata(
+      primaryServiceSlug,
+      body.serviceMetadata,
     );
+    if (!metadataValidation.ok) {
+      return NextResponse.json(
+        { ok: false, error: metadataValidation.errors.join(" ") },
+        { status: 400 },
+      );
+    }
+    metadataValue = metadataValidation.data as Prisma.InputJsonValue;
   }
 
   const serviceSlugs = normalizeServiceTagSlugs(
-    body.tagSlugs?.length ? body.tagSlugs : [primaryServiceSlug],
+    body.tagSlugs?.length
+      ? body.tagSlugs
+      : primaryServiceSlug
+        ? [primaryServiceSlug]
+        : [],
   );
   const contextSlugs = normalizeContextTagSlugs(body.contextSlugs);
 
@@ -278,7 +298,11 @@ export async function POST(request: NextRequest) {
 
   const description = body.description?.trim() || null;
   const location = body.location?.trim() || null;
-  const alt = body.alt?.trim() || buildAssetAltText({ title, location, primaryServiceSlug });
+  const alt =
+    body.alt?.trim() ||
+    (primaryServiceSlug
+      ? buildAssetAltText({ title, location, primaryServiceSlug })
+      : title);
   const uploadBatchId = body.uploadBatchId?.trim() || null;
 
   // ── GPS / EXIF (INTERNAL ONLY — never returned by public APIs or rendered publicly) ──
@@ -352,14 +376,16 @@ export async function POST(request: NextRequest) {
           description,
           location,
           primaryServiceSlug,
-          serviceMetadata: metadataValidation.data as Prisma.InputJsonValue,
+          serviceMetadata: metadataValue,
           alt: alt || null,
           uploadBatchId,
           gpsLat,
           gpsLng,
           areaSlug,
           exifTakenAt,
-          published: Boolean(body.published),
+          // Curated uploads are pre-approved; quick (AI) uploads await review.
+          reviewStatus: isQuickUpload ? "PENDING" : "APPROVED",
+          published: isQuickUpload ? false : Boolean(body.published),
           materials: Array.isArray(body.materials) ? body.materials : [],
           materialCategoryId: body.materialCategoryId || null,
           assetManufacturerId: body.assetManufacturerId || null,

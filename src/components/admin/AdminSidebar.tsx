@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Activity,
   Camera,
+  ClipboardCheck,
   FileText,
   Film,
   FolderOpen,
@@ -40,6 +41,7 @@ const NAV_GROUPS = [
     label: "Portfolio",
     links: [
       { href: "/admin/photos", label: "Photos", icon: ImageIcon },
+      { href: "/admin/review", label: "Review", icon: ClipboardCheck },
       { href: "/admin/projects", label: "Projects", icon: FolderOpen },
       { href: "/admin/media", label: "Media Manager", icon: Film },
     ],
@@ -72,12 +74,14 @@ function NavLink({
   label,
   icon: Icon,
   active,
+  badge,
   onClick,
 }: {
   href: string;
   label: string;
   icon: React.ElementType;
   active: boolean;
+  badge?: number;
   onClick?: () => void;
 }) {
   return (
@@ -92,9 +96,13 @@ function NavLink({
     >
       <Icon className={`h-4 w-4 flex-shrink-0 ${active ? "text-gray-700" : "text-gray-400"}`} />
       <span>{label}</span>
-      {active && (
+      {badge && badge > 0 ? (
+        <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red px-1.5 font-ui text-[11px] font-bold text-white">
+          {badge}
+        </span>
+      ) : active ? (
         <span className="ml-auto h-1.5 w-1.5 rounded-full bg-red" />
-      )}
+      ) : null}
     </Link>
   );
 }
@@ -102,6 +110,29 @@ function NavLink({
 export default function AdminSidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  // Pending review count for the sidebar badge; refreshes on approve/reject events.
+  useEffect(() => {
+    let active = true;
+    async function refresh() {
+      try {
+        const res = await fetch("/api/admin/review-queue?count=1");
+        const data = (await res.json()) as { pendingCount?: number };
+        if (active && typeof data.pendingCount === "number") setPendingCount(data.pendingCount);
+      } catch {
+        /* ignore */
+      }
+    }
+    refresh();
+    window.addEventListener("admin-review-updated", refresh);
+    window.addEventListener("admin-assets-refresh", refresh);
+    return () => {
+      active = false;
+      window.removeEventListener("admin-review-updated", refresh);
+      window.removeEventListener("admin-assets-refresh", refresh);
+    };
+  }, []);
 
   function isActive(href: string, exact?: boolean) {
     if (exact) return pathname === href;
@@ -145,6 +176,7 @@ export default function AdminSidebar() {
                     label={link.label}
                     icon={link.icon}
                     active={isActive(link.href, "exact" in link ? link.exact : undefined)}
+                    badge={link.href === "/admin/review" ? pendingCount : undefined}
                     onClick={() => setMobileOpen(false)}
                   />
                 ))}

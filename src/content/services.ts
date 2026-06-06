@@ -339,7 +339,7 @@ export const SERVICE_LIST: ServiceDef[] = [
       "Cabinet installs and custom cabinet solutions in Las Vegas for kitchens, pantry upgrades, mudrooms, and practical storage projects.",
     ctaLabel: "Get a Cabinet Quote",
     sortOrder: 6,
-    aliases: ["custom-cabinetry", "pantry-pullouts", "pantry", "closet-systems", "closets"],
+    aliases: ["custom-cabinetry", "pantry-pullouts", "pantry"],
     status: "active",
   },
   {
@@ -390,7 +390,7 @@ export const SERVICE_LIST: ServiceDef[] = [
       "Custom closet systems in Las Vegas, Henderson, and Summerlin — walk-in and reach-in closets, islands, shoe walls, and vanity towers built to fit in melamine and TFL.",
     ctaLabel: "Get a Custom Closet Quote",
     sortOrder: 10,
-    aliases: [],
+    aliases: ["closet-systems", "closets"],
     status: "active",
   },
   {

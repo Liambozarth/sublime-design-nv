@@ -143,6 +143,12 @@ function toTitleCase(str: string) {
   return str.replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+// Clean a raw filename into a human title: drop extension, normalize separators.
+function filenameToTitle(name: string): string {
+  const base = name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+  return base ? toTitleCase(base) : "Untitled";
+}
+
 function toSlug(str: string) {
   return str
     .toLowerCase()
@@ -430,6 +436,7 @@ export default function AssetUploader() {
   const [serviceMetadata, setServiceMetadata] = useState<Record<string, unknown>>({});
   const [published, setPublished] = useState(false);
   const [setAsHero, setSetAsHero] = useState(false);
+  const [quickUpload, setQuickUpload] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [statuses, setStatuses] = useState<UploadStatus[]>([]);
   const [lastCompletedBatch, setLastCompletedBatch] = useState<{
@@ -507,9 +514,8 @@ export default function AssetUploader() {
 
   const canUpload =
     files.length > 0 &&
-    Boolean(primaryService) &&
-    Boolean(resolvedLocation) &&
-    !isUploading;
+    !isUploading &&
+    (quickUpload || (Boolean(primaryService) && Boolean(resolvedLocation)));
 
   // ── Toggles ───────────────────────────────────────────────────────────────────
 
@@ -687,12 +693,19 @@ export default function AssetUploader() {
         updateStatus(file.name, { state: "uploading", progress: 0 });
 
         const isVideo = file.type.startsWith("video/");
-        const basePublicId = buildPublicId({
-          serviceType: primaryService,
-          location: resolvedLocation,
-          descriptor: finalFilename,
-          isVideo,
-        });
+        const basePublicId = quickUpload
+          ? buildPublicId({
+              serviceType: "Inbox",
+              location: "",
+              descriptor: file.name.replace(/\.[^.]+$/, "") || `photo-${i + 1}`,
+              isVideo,
+            })
+          : buildPublicId({
+              serviceType: primaryService,
+              location: resolvedLocation,
+              descriptor: finalFilename,
+              isVideo,
+            });
         const publicId = i === 0 ? basePublicId : `${basePublicId}-${i + 1}`;
 
         // Parse EXIF from the original file before upload (never blocks on failure)
@@ -707,33 +720,45 @@ export default function AssetUploader() {
         updateStatus(file.name, { state: "saving", progress: 95 });
 
         const tagSlugs = [primaryService, ...secondaryServices].filter(Boolean);
+        const saveBodyJson = quickUpload
+          ? {
+              // Quick upload — only files + EXIF; AI tags, Brandon reviews later.
+              ...uploadResult,
+              uploadBatchId,
+              quickUpload: true,
+              title: filenameToTitle(file.name),
+              gpsLat: exif.gpsLat,
+              gpsLng: exif.gpsLng,
+              exifTakenAt: exif.exifTakenAt,
+            }
+          : {
+              ...uploadResult,
+              uploadBatchId,
+              title: title.trim() || autoTitle,
+              alt: autoAlt,
+              description: seoDescription.trim() || shortDescription.trim() || description.trim() || undefined,
+              shortDescription: shortDescription.trim() || undefined,
+              seoDescription: seoDescription.trim() || undefined,
+              location: resolvedLocation || undefined,
+              primaryServiceSlug: primaryService,
+              serviceMetadata,
+              gpsLat: exif.gpsLat,
+              gpsLng: exif.gpsLng,
+              exifTakenAt: exif.exifTakenAt,
+              published,
+              tagSlugs,
+              contextSlugs,
+              materials: allMaterials,
+              materialCategoryId: materialSelection.categoryId || undefined,
+              assetManufacturerId: materialSelection.manufacturerId || undefined,
+              assetSupplierId: materialSelection.supplierId || undefined,
+              assetMaterialId: materialSelection.materialId || undefined,
+              materialSheen: materialSelection.sheen || undefined,
+            };
         const saveResponse = await fetch("/api/admin/assets", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...uploadResult,
-            uploadBatchId,
-            title: title.trim() || autoTitle,
-            alt: autoAlt,
-            description: seoDescription.trim() || shortDescription.trim() || description.trim() || undefined,
-            shortDescription: shortDescription.trim() || undefined,
-            seoDescription: seoDescription.trim() || undefined,
-            location: resolvedLocation || undefined,
-            primaryServiceSlug: primaryService,
-            serviceMetadata,
-            gpsLat: exif.gpsLat,
-            gpsLng: exif.gpsLng,
-            exifTakenAt: exif.exifTakenAt,
-            published,
-            tagSlugs,
-            contextSlugs,
-            materials: allMaterials,
-            materialCategoryId: materialSelection.categoryId || undefined,
-            assetManufacturerId: materialSelection.manufacturerId || undefined,
-            assetSupplierId: materialSelection.supplierId || undefined,
-            assetMaterialId: materialSelection.materialId || undefined,
-            materialSheen: materialSelection.sheen || undefined,
-          }),
+          body: JSON.stringify(saveBodyJson),
         });
 
         const saveBody = (await saveResponse.json().catch(() => ({}))) as {
@@ -892,6 +917,28 @@ export default function AssetUploader() {
 
       <form className="mt-4 space-y-2" onSubmit={handleSubmit}>
 
+        {/* Quick upload toggle */}
+        <label
+          className="flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition-colors"
+          style={{ borderColor: quickUpload ? "#1B2A6B" : "#e5e7eb", backgroundColor: quickUpload ? "rgba(27,42,107,0.04)" : "white" }}
+        >
+          <input
+            type="checkbox"
+            checked={quickUpload}
+            onChange={(e) => setQuickUpload(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-gray-300"
+            style={{ accentColor: "#1B2A6B" }}
+          />
+          <span>
+            <span className="font-ui text-sm font-semibold text-charcoal">⚡ Quick upload — let AI tag, review later</span>
+            <span className="mt-0.5 block font-ui text-xs text-gray-mid">
+              Drop photos and upload now. AI suggests tags; you approve them in the Review queue. No service or location required.
+            </span>
+          </span>
+        </label>
+
+        {!quickUpload && (
+        <>
         {/* 1 — Location */}
         <AccordionSection title="Location" badge={locationBadge} defaultOpen>
           <ChipGroup
@@ -1286,6 +1333,8 @@ export default function AssetUploader() {
             </div>
           </div>
         </AccordionSection>
+        </>
+        )}
 
         {/* Review bar + upload */}
         {error && <p className="font-ui text-sm text-red">{error}</p>}
@@ -1298,29 +1347,37 @@ export default function AssetUploader() {
             <div><span className="font-semibold">Filename:</span> <span className="font-mono">{finalFilename}</span></div>
             <div><span className="font-semibold">Files:</span> {files.length} selected</div>
           </div>
-          <label className="flex cursor-pointer items-center gap-2 font-ui text-sm text-charcoal">
-            <input
-              type="checkbox"
-              checked={published}
-              onChange={(e) => setPublished(e.target.checked)}
-              className="rounded border-gray-300 accent-red"
-            />
-            Publish immediately
-          </label>
-          <label className="flex cursor-pointer items-center gap-2 font-ui text-sm text-charcoal">
-            <input
-              type="checkbox"
-              checked={setAsHero}
-              onChange={(e) => setSetAsHero(e.target.checked)}
-              className="rounded border-gray-300"
-              style={{ accentColor: "#D97706" }}
-            />
-            ☆ Set as hero image for this service
-          </label>
+          {quickUpload ? (
+            <p className="font-ui text-xs text-navy">
+              ⚡ Quick mode: uploaded unpublished and queued for AI tagging. Approve in Review to publish.
+            </p>
+          ) : (
+            <>
+              <label className="flex cursor-pointer items-center gap-2 font-ui text-sm text-charcoal">
+                <input
+                  type="checkbox"
+                  checked={published}
+                  onChange={(e) => setPublished(e.target.checked)}
+                  className="rounded border-gray-300 accent-red"
+                />
+                Publish immediately
+              </label>
+              <label className="flex cursor-pointer items-center gap-2 font-ui text-sm text-charcoal">
+                <input
+                  type="checkbox"
+                  checked={setAsHero}
+                  onChange={(e) => setSetAsHero(e.target.checked)}
+                  className="rounded border-gray-300"
+                  style={{ accentColor: "#D97706" }}
+                />
+                ☆ Set as hero image for this service
+              </label>
+            </>
+          )}
           <button
             type="submit"
             disabled={!canUpload}
-            title={!canUpload && !isUploading ? "Select a service, location, and at least one file first" : undefined}
+            title={!canUpload && !isUploading ? (quickUpload ? "Add at least one file first" : "Select a service, location, and at least one file first") : undefined}
             className="w-full rounded-xl bg-red py-3 font-ui text-base font-semibold text-white transition-colors hover:bg-red-dark disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isUploading
@@ -1374,7 +1431,25 @@ export default function AssetUploader() {
 
       {/* Completed batch actions */}
       <div ref={batchSectionRef}>
-        {lastCompletedBatch && (
+        {lastCompletedBatch && quickUpload && (
+          <div className="mt-5 rounded-xl border-2 border-navy/30 bg-navy/5 p-4">
+            <p className="font-ui text-xs uppercase tracking-[0.18em] text-navy">Batch Uploaded</p>
+            <h3 className="mt-2 text-lg text-charcoal">AI is tagging your photos</h3>
+            <p className="mt-2 text-sm text-gray-mid">
+              {lastCompletedBatch.assetIds.length} photo{lastCompletedBatch.assetIds.length === 1 ? "" : "s"} uploaded and queued.
+              Review the AI suggestions and publish when ready.
+            </p>
+            <div className="mt-4">
+              <Link
+                href="/admin/review"
+                className="font-ui inline-flex items-center gap-2 rounded-lg bg-navy px-5 py-2.5 text-sm font-semibold text-white"
+              >
+                Review {lastCompletedBatch.assetIds.length} photo{lastCompletedBatch.assetIds.length === 1 ? "" : "s"} now →
+              </Link>
+            </div>
+          </div>
+        )}
+        {lastCompletedBatch && !quickUpload && (
           <div className="mt-5 rounded-xl border border-navy/20 bg-navy/5 p-4">
             <p className="font-ui text-xs uppercase tracking-[0.18em] text-navy">Batch Uploaded</p>
             <h3 className="mt-2 text-lg text-charcoal">Finish this project now</h3>

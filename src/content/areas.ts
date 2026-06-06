@@ -51,7 +51,7 @@ export const AREA_LIST: AreaDef[] = [
     heroBody:
       "Custom finish carpentry in Henderson with a focus on built-ins, closet systems, cabinetry, and clean install work that fits the home.",
     serviceAreaLabel: "Henderson",
-    relatedServiceSlugs: ["built-ins", "closet-systems", "pantry-pullouts", "custom-cabinetry"],
+    relatedServiceSlugs: ["built-ins", "custom-closets", "pantry-pullouts", "custom-cabinetry"],
     nearbyAreas: ["las-vegas", "paradise", "spring-valley"],
     status: "active",
   },
@@ -85,7 +85,7 @@ export const AREA_LIST: AreaDef[] = [
     heroBody:
       "Custom built-ins, cabinetry, shelves, and storage systems for homes in Spring Valley and the surrounding Las Vegas Valley.",
     serviceAreaLabel: "Spring Valley",
-    relatedServiceSlugs: ["built-ins", "custom-cabinetry", "floating-shelves", "closet-systems"],
+    relatedServiceSlugs: ["built-ins", "custom-cabinetry", "floating-shelves", "custom-closets"],
     nearbyAreas: ["las-vegas", "summerlin", "paradise"],
     status: "active",
   },
@@ -138,7 +138,7 @@ export const AREA_LIST: AreaDef[] = [
     heroBody:
       "Custom pantry pullouts, closet systems, built-ins, and cabinetry installed throughout Green Valley Ranch.",
     serviceAreaLabel: "Green Valley Ranch",
-    relatedServiceSlugs: ["pantry-pullouts", "closet-systems", "built-ins", "custom-cabinetry"],
+    relatedServiceSlugs: ["pantry-pullouts", "custom-closets", "built-ins", "custom-cabinetry"],
     nearbyAreas: ["henderson", "paradise", "las-vegas"],
     status: "active",
     coordinates: { lat: 36.0147, lng: -115.0572 },
@@ -156,7 +156,7 @@ export const AREA_LIST: AreaDef[] = [
     heroBody:
       "Built-ins, closet systems, cabinetry, and floating shelves measured and installed for homes across Anthem in Henderson.",
     serviceAreaLabel: "Anthem",
-    relatedServiceSlugs: ["built-ins", "closet-systems", "custom-cabinetry", "floating-shelves"],
+    relatedServiceSlugs: ["built-ins", "custom-closets", "custom-cabinetry", "floating-shelves"],
     nearbyAreas: ["henderson", "green-valley-ranch", "las-vegas", "southern-highlands"],
     status: "active",
     coordinates: { lat: 35.9727, lng: -115.0845 },
@@ -192,7 +192,7 @@ export const AREA_LIST: AreaDef[] = [
     heroBody:
       "Custom pantry pullouts, built-ins, closet systems, and cabinetry installed throughout Centennial Hills.",
     serviceAreaLabel: "Centennial Hills",
-    relatedServiceSlugs: ["pantry-pullouts", "built-ins", "closet-systems", "custom-cabinetry"],
+    relatedServiceSlugs: ["pantry-pullouts", "built-ins", "custom-closets", "custom-cabinetry"],
     nearbyAreas: ["las-vegas", "summerlin", "north-las-vegas"],
     status: "active",
     coordinates: { lat: 36.2684, lng: -115.2617 },
@@ -210,7 +210,7 @@ export const AREA_LIST: AreaDef[] = [
     heroBody:
       "Custom built-ins, floating shelves, closet systems, and cabinetry installed throughout North Las Vegas.",
     serviceAreaLabel: "North Las Vegas",
-    relatedServiceSlugs: ["built-ins", "floating-shelves", "closet-systems", "custom-cabinetry"],
+    relatedServiceSlugs: ["built-ins", "floating-shelves", "custom-closets", "custom-cabinetry"],
     nearbyAreas: ["las-vegas", "centennial-hills", "paradise"],
     status: "active",
     coordinates: { lat: 36.1989, lng: -115.1175 },
@@ -228,7 +228,7 @@ export const AREA_LIST: AreaDef[] = [
     heroBody:
       "Built-ins, cabinetry, closet systems, and floating shelves measured and installed for homes in Rhodes Ranch.",
     serviceAreaLabel: "Rhodes Ranch",
-    relatedServiceSlugs: ["built-ins", "custom-cabinetry", "closet-systems", "floating-shelves"],
+    relatedServiceSlugs: ["built-ins", "custom-cabinetry", "custom-closets", "floating-shelves"],
     nearbyAreas: ["spring-valley", "summerlin", "las-vegas", "southern-highlands"],
     status: "active",
     coordinates: { lat: 36.0598, lng: -115.2641 },
@@ -246,7 +246,7 @@ export const AREA_LIST: AreaDef[] = [
     heroBody:
       "Custom built-ins, cabinetry, closet systems, and mantels installed for homes throughout Seven Hills in Henderson.",
     serviceAreaLabel: "Seven Hills",
-    relatedServiceSlugs: ["built-ins", "custom-cabinetry", "closet-systems", "mantels"],
+    relatedServiceSlugs: ["built-ins", "custom-cabinetry", "custom-closets", "mantels"],
     nearbyAreas: ["henderson", "green-valley-ranch", "anthem", "southern-highlands"],
     status: "active",
     coordinates: { lat: 36.0024, lng: -114.9767 },
@@ -264,7 +264,7 @@ export const AREA_LIST: AreaDef[] = [
     heroBody:
       "Built-ins, closet systems, cabinetry, and floating shelves measured and installed for custom homes across Southern Highlands in south Las Vegas.",
     serviceAreaLabel: "Southern Highlands",
-    relatedServiceSlugs: ["built-ins", "closet-systems", "custom-cabinetry", "floating-shelves"],
+    relatedServiceSlugs: ["built-ins", "custom-closets", "custom-cabinetry", "floating-shelves"],
     nearbyAreas: ["anthem", "rhodes-ranch", "seven-hills"],
     status: "active",
     coordinates: { lat: 35.9735, lng: -115.1898 },
