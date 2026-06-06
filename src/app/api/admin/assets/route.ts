@@ -12,6 +12,7 @@ import {
   normalizeServiceTagSlugs,
 } from "@/lib/serviceTags";
 import { buildAssetAltText, validateServiceAssetMetadata } from "@/lib/serviceAssetMetadata";
+import { nearestAreaSlug } from "@/lib/geo";
 
 type CreateAssetBody = {
   kind?: AssetKind;
@@ -29,6 +30,10 @@ type CreateAssetBody = {
   location?: string;
   primaryServiceSlug?: string;
   serviceMetadata?: unknown;
+  gpsLat?: number | null;
+  gpsLng?: number | null;
+  areaSlug?: string | null;
+  exifTakenAt?: string | null;
   published?: boolean;
   tagSlugs?: string[];
   contextSlugs?: string[];
@@ -276,6 +281,34 @@ export async function POST(request: NextRequest) {
   const alt = body.alt?.trim() || buildAssetAltText({ title, location, primaryServiceSlug });
   const uploadBatchId = body.uploadBatchId?.trim() || null;
 
+  // ── GPS / EXIF (INTERNAL ONLY — never returned by public APIs or rendered publicly) ──
+  // Validate lat/lng ranges; ignore (null out) anything out of bounds rather than failing.
+  const gpsLat =
+    typeof body.gpsLat === "number" && Number.isFinite(body.gpsLat) &&
+    body.gpsLat >= -90 && body.gpsLat <= 90
+      ? body.gpsLat
+      : null;
+  const gpsLng =
+    typeof body.gpsLng === "number" && Number.isFinite(body.gpsLng) &&
+    body.gpsLng >= -180 && body.gpsLng <= 180
+      ? body.gpsLng
+      : null;
+  const hasGps = gpsLat !== null && gpsLng !== null;
+
+  // Capture date: accept a parseable date that is not in the future and not absurdly old.
+  let exifTakenAt: Date | null = null;
+  if (body.exifTakenAt) {
+    const parsed = new Date(body.exifTakenAt);
+    const year = parsed.getFullYear();
+    if (!Number.isNaN(parsed.getTime()) && parsed.getTime() <= Date.now() && year >= 1990) {
+      exifTakenAt = parsed;
+    }
+  }
+
+  // areaSlug: an explicit value from the request wins; otherwise derive from GPS.
+  const explicitAreaSlug = body.areaSlug?.trim() || null;
+  const areaSlug = explicitAreaSlug ?? (hasGps ? nearestAreaSlug(gpsLat, gpsLng) : null);
+
   try {
     const asset = await db.$transaction(async (tx) => {
       const tagDefinitions = buildAssetTagDefinitions({
@@ -322,6 +355,10 @@ export async function POST(request: NextRequest) {
           serviceMetadata: metadataValidation.data as Prisma.InputJsonValue,
           alt: alt || null,
           uploadBatchId,
+          gpsLat,
+          gpsLng,
+          areaSlug,
+          exifTakenAt,
           published: Boolean(body.published),
           materials: Array.isArray(body.materials) ? body.materials : [],
           materialCategoryId: body.materialCategoryId || null,

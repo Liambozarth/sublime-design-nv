@@ -22,6 +22,12 @@ enum ProjectStatus {
   PUBLISHED
 }
 
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model ServiceType {
   id         String     @id @default(cuid())
   slug       String
@@ -58,6 +64,16 @@ model Asset {
   published          Boolean        @default(false)
   galleryFeature     Boolean        @default(false)
   isHero             Boolean        @default(false)
+  // ── Photo pipeline (Phase 1) ──
+  reviewStatus       ReviewStatus   @default(PENDING)
+  aiSuggestions      Json?
+  // PRIVACY: gpsLat/gpsLng are INTERNAL ONLY. Never return them from any public
+  // (non-admin) API or render them on any public page. Public surfaces show
+  // areaSlug neighborhood granularity only.
+  gpsLat             Float?
+  gpsLng             Float?
+  areaSlug           String?
+  exifTakenAt        DateTime?
   tags               AssetTag[]
   projectLinks       ProjectAsset[]
   coverForProjects   Project[]         @relation("ProjectCoverAsset")

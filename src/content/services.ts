@@ -343,6 +343,57 @@ export const SERVICE_LIST: ServiceDef[] = [
     status: "active",
   },
   {
+    slug: "custom-closets",
+    title: "Custom Closets",
+    shortTitle: "Custom Closets",
+    navLabel: "Custom Closets",
+    description:
+      "Custom closet systems for Las Vegas homes — walk-in closets, reach-in closets, closet islands, shoe walls, and vanity towers built to fit the space in melamine and TFL.",
+    shortDescription:
+      "Walk-in and reach-in closet systems, islands, shoe walls, and vanity towers built to fit.",
+    heroHeadline: "Closets Built Around How You Actually Use the Space",
+    heroBody:
+      "We design and build custom closet systems for Las Vegas homes — walk-in and reach-in layouts, closet islands, shoe walls, and vanity towers measured to the room and installed clean.",
+    introParagraph:
+      "A good closet system is about fit and function, not just shelving. We build walk-in and reach-in closets around the real dimensions of the room, the way you store clothing and shoes, and the finish direction you want. That covers hanging sections, drawer banks, shoe walls, vanity towers, closet islands, and glass-front uppers — built in durable melamine and TFL systems and installed to look like part of the home. Whether the goal is a full walk-in build or a cleaner reach-in upgrade, we keep the layout practical and the install tight.",
+    valueBullets: [
+      "Walk-in and reach-in closet systems sized to the room and your storage habits",
+      "Closet islands, shoe walls, vanity towers, and drawer banks built into the layout",
+      "Durable melamine and TFL systems in a range of textures and colors",
+      "Glass-front uppers and finish details for a more custom, furniture-grade look",
+    ],
+    processSteps: [
+      "Measure the closet, review storage needs, hanging vs. drawer ratio, and finish direction",
+      "Design and fabricate the system — sections, island, shoe wall, and towers — to fit the space",
+      "Install and adjust the system for clean operation and a built-to-fit finished look",
+    ],
+    faq: [
+      {
+        question: "Do you build walk-in and reach-in closets?",
+        answer:
+          "Yes. We build both. Walk-in systems can include islands, vanity towers, and shoe walls, while reach-in closets focus on maximizing a smaller footprint cleanly.",
+      },
+      {
+        question: "What materials do you use for closet systems?",
+        answer:
+          "We build primarily in melamine and TFL systems for durability and a wide range of textures and colors, with glass-front uppers and finish upgrades available.",
+      },
+      {
+        question: "Can a closet include a center island or vanity tower?",
+        answer:
+          "Yes. Closet islands, vanity towers, drawer banks, and shoe walls can all be designed into the layout when the room dimensions support it.",
+      },
+    ],
+    relatedServices: ["cabinets", "floating-shelves", "trim"],
+    seoTitle: "Custom Closets Las Vegas | Sublime Design NV",
+    seoDescription:
+      "Custom closet systems in Las Vegas, Henderson, and Summerlin — walk-in and reach-in closets, islands, shoe walls, and vanity towers built to fit in melamine and TFL.",
+    ctaLabel: "Get a Custom Closet Quote",
+    sortOrder: 10,
+    aliases: [],
+    status: "active",
+  },
+  {
     slug: "feature-wall",
     title: "Feature Walls",
     shortTitle: "Feature Walls",
@@ -504,6 +555,7 @@ const SERVICE_ORDER = [
   "media-walls",
   "faux-beams",
   "cabinets",
+  "custom-closets",
   "trim",
   "feature-wall",
   "led-lighting",

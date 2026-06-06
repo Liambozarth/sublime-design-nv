@@ -1,5 +1,6 @@
 "use client";
 
+import exifr from "exifr";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
@@ -40,6 +41,7 @@ type UploadStatus = {
   state: "pending" | "uploading" | "saving" | "success" | "error";
   progress: number;
   message?: string;
+  analysis?: "analyzing" | "ready" | "failed";
 };
 
 type FilePreview = {
@@ -68,6 +70,74 @@ async function createPreviewUrl(file: File): Promise<string> {
   return URL.createObjectURL(file);
 }
 
+
+// ── EXIF extraction ─────────────────────────────────────────────────────────
+// Parse GPS + capture date from the ORIGINAL file before upload. iPhone HEICs work
+// with exifr's default parser for EXIF/GPS blocks. Failure to parse must never block
+// an upload — every path returns nulls and never throws.
+
+type ExifData = { gpsLat: number | null; gpsLng: number | null; exifTakenAt: string | null };
+
+const EMPTY_EXIF: ExifData = { gpsLat: null, gpsLng: null, exifTakenAt: null };
+
+async function extractExif(file: File): Promise<ExifData> {
+  const isImage =
+    file.type.startsWith("image/") ||
+    /\.(heic|heif|jpe?g|tiff?)$/i.test(file.name);
+  if (!isImage) return EMPTY_EXIF;
+
+  const result: ExifData = { ...EMPTY_EXIF };
+
+  try {
+    const gps = await exifr.gps(file).catch(() => null);
+    if (gps && Number.isFinite(gps.latitude) && Number.isFinite(gps.longitude)) {
+      result.gpsLat = gps.latitude;
+      result.gpsLng = gps.longitude;
+    }
+  } catch {
+    /* ignore — leave GPS null */
+  }
+
+  try {
+    const meta = (await exifr
+      .parse(file, { pick: ["DateTimeOriginal", "CreateDate"] })
+      .catch(() => null)) as { DateTimeOriginal?: Date; CreateDate?: Date } | null;
+    const taken = meta?.DateTimeOriginal ?? meta?.CreateDate;
+    if (taken instanceof Date && !Number.isNaN(taken.getTime())) {
+      result.exifTakenAt = taken.toISOString();
+    }
+  } catch {
+    /* ignore — leave date null */
+  }
+
+  return result;
+}
+
+// ── AI vision auto-analysis (fire-and-forget, max 2 concurrent) ───────────────
+
+async function analyzeAsset(assetId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/admin/assets/${assetId}/analyze`, { method: "POST" });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function runWithConcurrency<T>(
+  items: T[],
+  limit: number,
+  worker: (item: T) => Promise<void>,
+): Promise<void> {
+  let index = 0;
+  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (index < items.length) {
+      const current = items[index++]!;
+      await worker(current);
+    }
+  });
+  await Promise.all(runners);
+}
 
 function toTitleCase(str: string) {
   return str.replace(/\b\w/g, (c) => c.toUpperCase());
@@ -609,6 +679,7 @@ export default function AssetUploader() {
 
     const uploadBatchId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}`;
     const createdAssetIds: string[] = [];
+    const analysisTasks: { assetId: string; fileName: string }[] = [];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i]!;
@@ -623,6 +694,9 @@ export default function AssetUploader() {
           isVideo,
         });
         const publicId = i === 0 ? basePublicId : `${basePublicId}-${i + 1}`;
+
+        // Parse EXIF from the original file before upload (never blocks on failure)
+        const exif = await extractExif(file).catch(() => EMPTY_EXIF);
 
         const uploadResult = await uploadFileToCloudinaryWithProgress(
           file,
@@ -647,6 +721,9 @@ export default function AssetUploader() {
             location: resolvedLocation || undefined,
             primaryServiceSlug: primaryService,
             serviceMetadata,
+            gpsLat: exif.gpsLat,
+            gpsLng: exif.gpsLng,
+            exifTakenAt: exif.exifTakenAt,
             published,
             tagSlugs,
             contextSlugs,
@@ -668,6 +745,7 @@ export default function AssetUploader() {
         const assetId = saveBody.asset?.id;
         if (assetId) {
           createdAssetIds.push(assetId);
+          analysisTasks.push({ assetId, fileName: file.name });
           // Set as hero for the service if requested (first file only)
           if (setAsHero && i === 0) {
             await fetch(`/api/admin/assets/${assetId}/hero`, { method: "POST" }).catch(() => null);
@@ -694,6 +772,15 @@ export default function AssetUploader() {
 
     setIsUploading(false);
     window.dispatchEvent(new Event("admin-assets-refresh"));
+
+    // Fire-and-forget AI vision analysis (max 2 concurrent). Never affects upload result.
+    if (analysisTasks.length > 0) {
+      analysisTasks.forEach((t) => updateStatus(t.fileName, { analysis: "analyzing" }));
+      void runWithConcurrency(analysisTasks, 2, async (t) => {
+        const ok = await analyzeAsset(t.assetId);
+        updateStatus(t.fileName, { analysis: ok ? "ready" : "failed" });
+      });
+    }
 
     if (createdAssetIds.length > 0) {
       setLastCompletedBatch({ uploadBatchId, assetIds: createdAssetIds });
@@ -1251,11 +1338,26 @@ export default function AssetUploader() {
             <div key={status.name} className="rounded-lg border border-gray-warm bg-cream/50 px-4 py-3">
               <div className="flex items-center justify-between gap-3">
                 <span className="min-w-0 flex-1 truncate font-ui text-sm font-semibold text-charcoal">{status.name}</span>
-                <span className={`flex-shrink-0 font-ui text-xs ${
-                  status.state === "success" ? "text-emerald-600" : status.state === "error" ? "text-red" : "text-gray-mid"
-                }`}>
-                  {status.state === "success" ? "✓ Uploaded" : status.state === "error" ? "✕ Failed" : status.state === "uploading" ? `${status.progress}%` : status.state}
-                </span>
+                <div className="flex flex-shrink-0 items-center gap-2">
+                  {status.analysis && (
+                    <span className={`font-ui text-xs ${
+                      status.analysis === "ready" ? "text-navy"
+                        : status.analysis === "failed" ? "text-amber-600"
+                        : "text-gray-mid"
+                    }`}>
+                      {status.analysis === "analyzing"
+                        ? "✦ Analyzing…"
+                        : status.analysis === "ready"
+                        ? "✦ Suggestions ready"
+                        : "✦ Analysis failed"}
+                    </span>
+                  )}
+                  <span className={`font-ui text-xs ${
+                    status.state === "success" ? "text-emerald-600" : status.state === "error" ? "text-red" : "text-gray-mid"
+                  }`}>
+                    {status.state === "success" ? "✓ Uploaded" : status.state === "error" ? "✕ Failed" : status.state === "uploading" ? `${status.progress}%` : status.state}
+                  </span>
+                </div>
               </div>
               {(status.state === "uploading" || status.state === "saving") && (
                 <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-warm">

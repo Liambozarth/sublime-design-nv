@@ -157,7 +157,7 @@ export const AREA_LIST: AreaDef[] = [
       "Built-ins, closet systems, cabinetry, and floating shelves measured and installed for homes across Anthem in Henderson.",
     serviceAreaLabel: "Anthem",
     relatedServiceSlugs: ["built-ins", "closet-systems", "custom-cabinetry", "floating-shelves"],
-    nearbyAreas: ["henderson", "green-valley-ranch", "las-vegas"],
+    nearbyAreas: ["henderson", "green-valley-ranch", "las-vegas", "southern-highlands"],
     status: "active",
     coordinates: { lat: 35.9727, lng: -115.0845 },
   },
@@ -229,7 +229,7 @@ export const AREA_LIST: AreaDef[] = [
       "Built-ins, cabinetry, closet systems, and floating shelves measured and installed for homes in Rhodes Ranch.",
     serviceAreaLabel: "Rhodes Ranch",
     relatedServiceSlugs: ["built-ins", "custom-cabinetry", "closet-systems", "floating-shelves"],
-    nearbyAreas: ["spring-valley", "summerlin", "las-vegas"],
+    nearbyAreas: ["spring-valley", "summerlin", "las-vegas", "southern-highlands"],
     status: "active",
     coordinates: { lat: 36.0598, lng: -115.2641 },
   },
@@ -247,9 +247,27 @@ export const AREA_LIST: AreaDef[] = [
       "Custom built-ins, cabinetry, closet systems, and mantels installed for homes throughout Seven Hills in Henderson.",
     serviceAreaLabel: "Seven Hills",
     relatedServiceSlugs: ["built-ins", "custom-cabinetry", "closet-systems", "mantels"],
-    nearbyAreas: ["henderson", "green-valley-ranch", "anthem"],
+    nearbyAreas: ["henderson", "green-valley-ranch", "anthem", "southern-highlands"],
     status: "active",
     coordinates: { lat: 36.0024, lng: -114.9767 },
+  },
+  {
+    slug: "southern-highlands",
+    name: "Southern Highlands",
+    title: "Custom Finish Carpentry in Southern Highlands",
+    seoTitle: "Custom Finish Carpentry Southern Highlands | Sublime Design NV",
+    seoDescription:
+      "Custom built-ins, closet systems, cabinetry, and floating shelves in Southern Highlands. Measured, built, and installed by Sublime Design NV.",
+    intro:
+      "Southern Highlands is a guard-gated golf community of custom homes in the south Las Vegas Valley, and the finish work needs to match that standard. We build custom carpentry measured to the room, fabricated in the shop, and installed cleanly — from full closet systems and built-ins to cabinetry and mantels.",
+    heroHeadline: "Custom Carpentry for Southern Highlands Homes",
+    heroBody:
+      "Built-ins, closet systems, cabinetry, and floating shelves measured and installed for custom homes across Southern Highlands in south Las Vegas.",
+    serviceAreaLabel: "Southern Highlands",
+    relatedServiceSlugs: ["built-ins", "closet-systems", "custom-cabinetry", "floating-shelves"],
+    nearbyAreas: ["anthem", "rhodes-ranch", "seven-hills"],
+    status: "active",
+    coordinates: { lat: 35.9735, lng: -115.1898 },
   },
 ];
 
