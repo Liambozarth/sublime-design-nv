@@ -1,3 +1,5 @@
+import withSerwistInit from "@serwist/next";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async redirects() {
@@ -45,4 +47,12 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+// Service worker (PWA). Registered in production only; disabled in dev.
+const withSerwist = withSerwistInit({
+  swSrc: "src/app/sw.ts",
+  swDest: "public/sw.js",
+  disable: process.env.NODE_ENV === "development",
+  // /api/* and /admin/* are forced NetworkOnly inside sw.ts.
+});
+
+export default withSerwist(nextConfig);

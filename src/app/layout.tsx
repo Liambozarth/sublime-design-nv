@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Bebas_Neue, Montserrat, Raleway } from "next/font/google";
 import { headers } from "next/headers";
 import Script from "next/script";
@@ -53,11 +53,20 @@ export const metadata: Metadata = {
       { url: "/favicon.ico" },
     ],
     shortcut: "/favicon.ico",
-    apple: "/favicon.svg",
+    apple: "/icons/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Sublime Design",
+    statusBarStyle: "default",
   },
   other: {
     "p:domain_verify": "6bb7e896f2f0dfde101cf90838313550",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1B2A6B",
 };
 
 const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;

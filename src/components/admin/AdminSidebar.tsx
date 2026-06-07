@@ -23,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 import { logoutAction } from "@/app/admin/_actions";
+import InstallAppButton from "@/components/admin/InstallAppButton";
 
 const NAV_GROUPS = [
   {
@@ -182,6 +183,9 @@ export default function AdminSidebar() {
                     onClick={() => setMobileOpen(false)}
                   />
                 ))}
+                {group.label === "Account" && (
+                  <InstallAppButton onNavigate={() => setMobileOpen(false)} />
+                )}
               </div>
             </div>
           ))}
