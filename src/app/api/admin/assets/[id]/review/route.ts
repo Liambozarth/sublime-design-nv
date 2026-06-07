@@ -11,6 +11,9 @@ import {
   normalizeServiceTagSlugs,
 } from "@/lib/serviceTags";
 import { buildAssetAltText, validateServiceAssetMetadata } from "@/lib/serviceAssetMetadata";
+import { renameAssetToCurated } from "@/lib/cloudinary.server";
+
+const INBOX_PREFIX = "Sublime/Inbox/";
 
 type Params = { params: { id: string } };
 
@@ -30,6 +33,7 @@ type ReviewBody = {
   action?: "approve" | "reject";
   fields?: ReviewFields;
   publish?: boolean;
+  paintColorIds?: string[];
 };
 
 // POST /api/admin/assets/[id]/review
@@ -48,7 +52,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   const existing = await db.asset.findUnique({
     where: { id: params.id },
-    select: { id: true, kind: true },
+    select: { id: true, kind: true, publicId: true, secureUrl: true },
   });
   if (!existing) {
     return NextResponse.json({ ok: false, error: "Asset not found" }, { status: 404 });
@@ -126,6 +130,29 @@ export async function POST(request: NextRequest, { params }: Params) {
     fields.alt?.trim() || buildAssetAltText({ title, location, primaryServiceSlug });
   const published = body.publish ?? true;
 
+  const paintColorIds = Array.from(
+    new Set((body.paintColorIds ?? []).map((id) => id.trim()).filter(Boolean)),
+  );
+
+  // Cloudinary tidy: move quick-upload Inbox assets into the curated folder. Non-fatal —
+  // if the rename fails, approve still proceeds with the original publicId.
+  let renamed: { publicId: string; secureUrl: string } | null = null;
+  let renameWarning: string | null = null;
+  if (existing.publicId?.startsWith(INBOX_PREFIX)) {
+    try {
+      renamed = await renameAssetToCurated({
+        fromPublicId: existing.publicId,
+        serviceSlug: primaryServiceSlug,
+        descriptor: title,
+        location,
+        uniqueSuffix: existing.id,
+      });
+    } catch (error) {
+      renameWarning = error instanceof Error ? error.message : "Cloudinary rename failed";
+      console.warn("[assets/review]", renameWarning);
+    }
+  }
+
   try {
     const asset = await db.$transaction(async (tx) => {
       const tagDefinitions = buildAssetTagDefinitions({ serviceSlugs, contextSlugs });
@@ -144,6 +171,15 @@ export async function POST(request: NextRequest, { params }: Params) {
       // Replace existing tag rows with the reviewed set.
       await tx.assetTag.deleteMany({ where: { assetId: params.id } });
 
+      // Link selected paint-color matches (dedupe on the unique constraint).
+      for (const paintColorId of paintColorIds) {
+        await tx.assetPaintColor.upsert({
+          where: { assetId_paintColorId: { assetId: params.id, paintColorId } },
+          update: {},
+          create: { assetId: params.id, paintColorId },
+        });
+      }
+
       return tx.asset.update({
         where: { id: params.id },
         data: {
@@ -156,15 +192,23 @@ export async function POST(request: NextRequest, { params }: Params) {
           areaSlug,
           reviewStatus: "APPROVED",
           published,
+          ...(renamed ? { publicId: renamed.publicId, secureUrl: renamed.secureUrl } : {}),
           tags: {
             create: tagRecords.map((tag) => ({ serviceTypeId: tag.id })),
           },
         },
-        select: { id: true, reviewStatus: true, published: true, title: true },
+        select: { id: true, reviewStatus: true, published: true, title: true, publicId: true },
       });
     });
 
-    return NextResponse.json({ ok: true, action: "approve", asset });
+    return NextResponse.json({
+      ok: true,
+      action: "approve",
+      asset,
+      linkedColors: paintColorIds.length,
+      ...(renamed ? { renamed: true } : {}),
+      ...(renameWarning ? { renameWarning } : {}),
+    });
   } catch (error) {
     console.error(
       "[assets/review] approve failed:",

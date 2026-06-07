@@ -617,3 +617,65 @@ export async function getAssetByPublicId(publicId: string): Promise<CloudinaryAs
     return null;
   }
 }
+
+// Service slug → Cloudinary folder (mirrors src/lib/cloudinaryUpload.ts buildPublicId).
+const SERVICE_FOLDER_MAP: Record<string, string> = {
+  "barn-doors": "BarnDoors",
+  "media-walls": "MediaWalls",
+  "faux-beams": "FauxBeams",
+  "floating-shelves": "FloatingShelves",
+  mantels: "Mantels",
+  cabinets: "Cabinets",
+  "custom-closets": "CustomClosets",
+  trim: "TrimWork",
+  "feature-wall": "FeatureWalls",
+  "led-lighting": "LEDLighting",
+};
+
+/**
+ * Rename an Inbox (quick-upload) asset to the curated folder convention used by normal
+ * uploads: Sublime/<ServiceFolder>/<service>-<descriptor>-<location>-las-vegas.
+ * Returns the new { publicId, secureUrl }, or null if no rename was performed.
+ * On collision, retries once with a short unique suffix. Throws only on hard API errors.
+ */
+export async function renameAssetToCurated(opts: {
+  fromPublicId: string;
+  serviceSlug: string;
+  descriptor: string;
+  location?: string | null;
+  uniqueSuffix: string;
+}): Promise<{ publicId: string; secureUrl: string } | null> {
+  ensureCloudinaryConfigured();
+
+  const folder = `Sublime/${SERVICE_FOLDER_MAP[opts.serviceSlug] ?? "Gallery"}`;
+  const slug = [slugify(opts.serviceSlug), slugify(opts.descriptor), slugify(opts.location ?? ""), "las-vegas"]
+    .filter(Boolean)
+    .join("-")
+    .replace(/-+/g, "-");
+  const target = `${folder}/${slug}`;
+
+  if (!target || target === opts.fromPublicId) return null;
+
+  async function rename(to: string) {
+    return (await cloudinary.uploader.rename(opts.fromPublicId, to, {
+      resource_type: "image",
+      overwrite: false,
+      invalidate: true,
+    })) as { public_id: string; secure_url: string };
+  }
+
+  try {
+    const res = await rename(target);
+    return { publicId: res.public_id, secureUrl: res.secure_url };
+  } catch {
+    // Likely a name collision — retry once with a short unique suffix.
+    try {
+      const res = await rename(`${target}-${opts.uniqueSuffix.slice(0, 6)}`);
+      return { publicId: res.public_id, secureUrl: res.secure_url };
+    } catch (error) {
+      throw new Error(
+        `Cloudinary rename failed for "${opts.fromPublicId}": ${error instanceof Error ? error.message : "unknown"}`,
+      );
+    }
+  }
+}

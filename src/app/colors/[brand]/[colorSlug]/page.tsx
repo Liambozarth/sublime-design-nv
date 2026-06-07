@@ -266,8 +266,12 @@ export default async function ColorReferencePage({ params }: Props) {
               Real Work in Las Vegas
             </p>
             <h2 className="mt-2 text-2xl text-charcoal">
-              Projects Using {color.name}
+              Projects with a Color Match to {color.name}
             </h2>
+            <p className="mt-1 max-w-2xl font-ui text-sm text-gray-mid">
+              Photos whose colors are a close match to {color.name} — a color reference, not a
+              statement that this exact product was used.
+            </p>
 
             {assets.length > 0 ? (
               <div className="mt-6 columns-2 gap-3 space-y-3 md:columns-3">
@@ -276,7 +280,7 @@ export default async function ColorReferencePage({ params }: Props) {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={asset.secureUrl}
-                      alt={asset.alt ?? `${color.name} custom woodwork Las Vegas`}
+                      alt={asset.alt ?? `Custom woodwork in Las Vegas — color similar to ${color.name}`}
                       className="w-full object-cover"
                       loading="lazy"
                     />
@@ -290,7 +294,7 @@ export default async function ColorReferencePage({ params }: Props) {
                   style={{ backgroundColor: color.hex }}
                 />
                 <p className="font-ui text-sm text-gray-mid">
-                  No portfolio photos with {color.name} yet.
+                  No color-matched portfolio photos for {color.name} yet.
                 </p>
                 <p className="mt-1 font-ui text-xs text-gray-300">
                   We&apos;re always adding new projects — check back soon.
@@ -309,7 +313,7 @@ export default async function ColorReferencePage({ params }: Props) {
           {/* Cross-links to service pages */}
           <section className="mt-12">
             <h2 className="text-xl font-semibold text-charcoal">
-              See {color.name} in Custom Projects
+              Explore Custom Project Types
             </h2>
             <div className="mt-4 flex flex-wrap gap-2">
               {[

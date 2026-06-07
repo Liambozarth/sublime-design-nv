@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   Layers,
   LogOut,
+  Map as MapIcon,
   Menu,
   Settings,
   Share2,
@@ -55,6 +56,7 @@ const NAV_GROUPS = [
   {
     label: "Tools",
     links: [
+      { href: "/admin/map", label: "Photo Map", icon: MapIcon },
       { href: "/admin/site-health", label: "Site Health", icon: Activity },
       { href: "/admin/social", label: "Social Queue", icon: Share2 },
       { href: "/admin/shooting-checklist", label: "Shooting Checklist", icon: Camera },

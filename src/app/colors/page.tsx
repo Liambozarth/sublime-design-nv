@@ -78,7 +78,7 @@ export default function ColorsPage() {
         </h1>
         <p className="mt-4 max-w-2xl text-base text-gray-mid">
           Browse 5,800+ colors from Sherwin-Williams, Benjamin Moore, and more. See real Las Vegas
-          projects using each color and get a free quote.
+          projects with a close color match to each color and get a free quote.
         </p>
 
         {/* Search + brand filter */}

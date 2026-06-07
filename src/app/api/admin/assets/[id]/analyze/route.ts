@@ -8,6 +8,18 @@ import {
   SERVICE_ASSET_METADATA_CONFIG,
   validateServiceAssetMetadata,
 } from "@/lib/serviceAssetMetadata";
+import { matchesForSurface, type PaintColorRow } from "@/lib/colorMatch";
+
+const PAINT_COLOR_SELECT = {
+  id: true,
+  brand: true,
+  name: true,
+  code: true,
+  hex: true,
+  r: true,
+  g: true,
+  b: true,
+} as const;
 
 // Vision calls can be slow; allow up to 60s.
 export const maxDuration = 60;
@@ -229,6 +241,21 @@ export async function POST(_req: NextRequest, { params }: Params) {
       ? Math.min(1, Math.max(0, parsed.confidence))
       : 0;
 
+  // Enrich each dominant color with paint/stain matches (CIEDE2000 vs PaintColor DB).
+  const dominantColors = sanitizeColors(parsed.dominantColors);
+  let enrichedColors: Array<
+    (typeof dominantColors)[number] & { matches: ReturnType<typeof matchesForSurface> }
+  > = [];
+  if (dominantColors.length > 0) {
+    const paintRows = (await db.paintColor.findMany({
+      select: PAINT_COLOR_SELECT,
+    })) as PaintColorRow[];
+    enrichedColors = dominantColors.map((c) => ({
+      ...c,
+      matches: matchesForSurface(c.hex, c.surface, paintRows),
+    }));
+  }
+
   const suggestions = {
     primaryServiceSlug,
     secondaryServiceSlugs,
@@ -239,7 +266,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
     descriptionShort: asString(parsed.descriptionShort),
     descriptionSeo: asString(parsed.descriptionSeo),
     materialsVisible: asStringArray(parsed.materialsVisible),
-    dominantColors: sanitizeColors(parsed.dominantColors),
+    dominantColors: enrichedColors,
     qualityFlags,
     confidence: confidenceNum,
     analyzedAt: new Date().toISOString(),
