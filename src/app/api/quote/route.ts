@@ -192,6 +192,7 @@ function buildHtmlEmail(fields: {
   timeline: string;
   budget: string;
   message: string;
+  smsConsent: boolean;
   photoUrls: string[];
   leadId: string | null;
   utmSource?: string;
@@ -257,6 +258,7 @@ function buildHtmlEmail(fields: {
           ${row("Name", escapeHtml(fields.name))}
           ${row("Email", `<a href="mailto:${escapeHtml(fields.email)}" style="color:#b91c1c;">${escapeHtml(fields.email)}</a>`)}
           ${row("Phone", `<a href="tel:${escapeHtml(fields.phone.replace(/\D/g, "").replace(/^(\d)/, "+1$1"))}" style="color:#b91c1c;">${escapeHtml(fields.phone)}</a>`)}
+          ${row("SMS consent", fields.smsConsent ? "Yes — opted in to text updates" : "No")}
         </tbody>
       </table>
 
@@ -331,6 +333,7 @@ function buildTextEmail(fields: {
   timeline: string;
   budget: string;
   message: string;
+  smsConsent: boolean;
   photoUrls: string[];
   sourceType?: string;
   sourcePath?: string;
@@ -348,6 +351,7 @@ function buildTextEmail(fields: {
     `Name:     ${fields.name}`,
     `Email:    ${fields.email}`,
     `Phone:    ${fields.phone}`,
+    `SMS consent: ${fields.smsConsent ? "Yes" : "No"}`,
     "",
     "PROJECT",
     `Service:  ${svcLabel}`,
@@ -425,6 +429,7 @@ export async function POST(request: Request) {
       lastName: fields.lastName,
       email: fields.email,
       phone: fields.phone,
+      smsConsent: fields.smsConsent,
       service: fields.service,
       location: fields.location,
       timeline: fields.timeline || undefined,
@@ -496,6 +501,7 @@ export async function POST(request: Request) {
       name: fields.name,
       email: fields.email,
       phone: fields.phone,
+      smsConsent: fields.smsConsent,
       service: fields.service,
       location: fields.location,
       timeline: fields.timeline,

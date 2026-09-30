@@ -626,6 +626,9 @@ export default function LeadInbox({ initialLeads, initialSummary }: LeadInboxPro
                 <a href={`tel:${selectedLead.phone.replace(/\D/g, "")}`} className="rounded-lg border border-gray-200 bg-cream px-3 py-3">
                   <span className="font-ui text-[10px] uppercase tracking-[0.18em] text-gray-mid">Phone</span>
                   <span className="mt-1 block">{selectedLead.phone}</span>
+                  <span className="mt-1 block text-xs text-gray-mid">
+                    {selectedLead.smsConsent ? "Text updates: opted in" : "Text updates: not requested"}
+                  </span>
                 </a>
                 <div className="rounded-lg border border-gray-200 bg-cream px-3 py-3">
                   <span className="font-ui text-[10px] uppercase tracking-[0.18em] text-gray-mid">Service</span>

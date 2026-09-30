@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Clock, Mail, MapPin, Phone } from "lucide-react";
-import { SITE } from "@/lib/constants";
+import { Clock, Mail, MapPin, MessageSquare, Phone } from "lucide-react";
+import { LEGAL, SITE } from "@/lib/constants";
 import { ACTIVE_SERVICES } from "@/content/services";
 import { getBusinessSettings } from "@/lib/settings";
 import FooterLogo from "@/components/layout/FooterLogo";
@@ -74,6 +74,15 @@ export default async function Footer() {
                 </a>
               </div>
             )}
+            <div className="flex items-start gap-3">
+              <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-white/80" />
+              <a
+                href={LEGAL.smsPhoneHref}
+                className="font-ui text-sm text-white/80 transition-colors hover:text-white"
+              >
+                Text us {LEGAL.smsPhoneDisplay}
+              </a>
+            </div>
             {biz.showEmail && (
               <div className="flex items-start gap-3">
                 <Mail className="mt-0.5 h-4 w-4 shrink-0 text-white/80" />
@@ -110,10 +119,24 @@ export default async function Footer() {
       </div>
 
       <div className="border-t border-white/10">
-        <div className="mx-auto max-w-7xl px-4 py-6 md:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-3 px-4 py-6 md:flex-row md:justify-between md:px-8">
           <p className="font-ui text-center text-sm text-white/70 md:text-left">
             &copy; {year} {SITE.name}. All Rights Reserved.
           </p>
+          <nav aria-label="Legal" className="flex items-center gap-4">
+            <Link
+              href="/privacy"
+              className="font-ui text-sm text-white/70 transition-colors hover:text-white"
+            >
+              Privacy Policy
+            </Link>
+            <Link
+              href="/terms"
+              className="font-ui text-sm text-white/70 transition-colors hover:text-white"
+            >
+              Terms of Service
+            </Link>
+          </nav>
         </div>
       </div>
     </footer>

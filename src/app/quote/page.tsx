@@ -560,6 +560,7 @@ export default function QuotePage() {
           lastName: form.lastName,
           email: form.email,
           phone: form.phone,
+          smsConsent: form.smsConsent,
           service: form.service,
           location: form.location,
           timeline: form.timeline || undefined,
@@ -756,6 +757,34 @@ export default function QuotePage() {
                   <FieldError msg={errors.phone} />
                 </div>
               </div>
+
+              <div className="sm:col-span-2">
+                <div className="flex items-start gap-3">
+                  <input
+                    id="smsConsent"
+                    name="smsConsent"
+                    type="checkbox"
+                    checked={form.smsConsent}
+                    onChange={(e) => set("smsConsent", e.target.checked)}
+                    className="mt-1 h-4 w-4 flex-shrink-0 rounded border-gray-300 accent-red"
+                  />
+                  <p className="text-sm leading-6 text-charcoal">
+                    <label htmlFor="smsConsent" className="cursor-pointer">
+                      Yes, text me about my quote and project updates from Sublime Design NV at the
+                      number above. Message frequency varies. Msg & data rates may apply. Reply STOP
+                      to opt out, HELP for help. See our
+                    </label>{" "}
+                    <Link href="/privacy" className="font-semibold text-red hover:underline">
+                      Privacy Policy
+                    </Link>{" "}
+                    and{" "}
+                    <Link href="/terms" className="font-semibold text-red hover:underline">
+                      Terms
+                    </Link>
+                    .
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -932,8 +961,14 @@ export default function QuotePage() {
           Prefer to call?{" "}
           <a href="tel:+17028479016" className="font-semibold text-red">
             (702) 847-9016
-          </a>{" "}
-          · Or go back to{" "}
+          </a>
+          {" · "}
+          Text us at{" "}
+          <a href="sms:+17022416907" className="font-semibold text-red">
+            (702) 241-6907
+          </a>
+          {" · "}
+          Or go back to{" "}
           <Link href="/" className="font-semibold text-red">
             home
           </Link>

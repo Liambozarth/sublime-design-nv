@@ -329,6 +329,7 @@ model Lead {
   lastName        String     @default("")
   email           String
   phone           String
+  smsConsent      Boolean    @default(false)
   service         String
   location        String
   timeline        String?
