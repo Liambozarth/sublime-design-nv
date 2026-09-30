@@ -28,6 +28,7 @@ export type QuoteFormFields = {
   budget: string;
   message: string;
   consent: boolean;
+  smsConsent: boolean;
 };
 
 export type QuoteFieldName = keyof QuoteFormFields;
@@ -92,6 +93,7 @@ export const QUOTE_DEFAULT_FORM: QuoteFormFields = {
   budget: "",
   message: "",
   consent: false,
+  smsConsent: false,
 };
 
 function sanitizeWhitespace(value: string) {
@@ -216,6 +218,7 @@ export function normalizeQuoteRequestPayload(payload: unknown): QuoteValidatedPa
     budget: sanitizeShortText(body.budget, 40),
     message: sanitizeShortText(body.message, MAX_MESSAGE_LENGTH),
     consent: sanitizeBoolean(body.consent),
+    smsConsent: sanitizeBoolean(body.smsConsent),
   };
 
   return {

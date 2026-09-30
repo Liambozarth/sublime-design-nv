@@ -6,6 +6,7 @@ export type LeadInput = {
   lastName: string;
   email: string;
   phone: string;
+  smsConsent?: boolean;
   service: string;
   location: string;
   timeline?: string;
@@ -31,6 +32,7 @@ export type LeadRecord = {
   name: string;
   email: string;
   phone: string;
+  smsConsent: boolean;
   service: string;
   location: string;
   timeline?: string;
@@ -117,6 +119,7 @@ function mapLead(row: {
   name: string;
   email: string;
   phone: string;
+  smsConsent?: boolean | null;
   service: string;
   location: string;
   timeline: string | null;
@@ -147,6 +150,7 @@ function mapLead(row: {
     name: row.name,
     email: row.email,
     phone: row.phone,
+    smsConsent: row.smsConsent === true,
     service: row.service,
     location: row.location,
     timeline: row.timeline ?? undefined,
@@ -218,6 +222,7 @@ export async function saveLead(input: LeadInput): Promise<string | null> {
         lastName: input.lastName,
         email: input.email,
         phone: input.phone,
+        smsConsent: input.smsConsent === true,
         service: input.service,
         location: input.location,
         timeline: input.timeline ?? null,

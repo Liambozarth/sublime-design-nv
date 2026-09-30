@@ -15,6 +15,22 @@ export const SITE = {
   },
 } as const;
 
+/** Legal and SMS program details used on privacy, terms, and the quote opt-in. */
+export const LEGAL = {
+  entityName: "Sublime Design NV LLC",
+  programName: "Sublime Design NV",
+  email: SITE.email,
+  emailHref: SITE.emailHref,
+  street: "5747 Garriga St",
+  cityStateZip: "Las Vegas, NV 89135",
+  address: "5747 Garriga St, Las Vegas, NV 89135",
+  smsPhoneDisplay: "(702) 241-6907",
+  smsPhoneHref: "sms:+17022416907",
+  effectiveDate: "September 30, 2026",
+  smsNoShareStatement:
+    "We do not share, sell, or rent mobile phone numbers, SMS opt-in data, or consent with third parties or affiliates for marketing or promotional purposes. Mobile information will not be shared with third parties/affiliates for marketing/promotional purposes; text messaging originator opt-in data and consent will not be shared with any third parties.",
+} as const;
+
 export const SERVICES = [
   {
     slug: "barn-doors",
