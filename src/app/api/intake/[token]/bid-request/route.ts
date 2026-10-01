@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { deliverIntakeLead, visionPageUrl } from "@/lib/fieldmetriq/sendIntakeLead";
 import { db } from "@/lib/db";
 import { sendSMS } from "@/lib/twilio/sendSMS";
 import { SITE } from "@/lib/constants";
@@ -41,7 +42,10 @@ export async function POST(
       phone: true,
       email: true,
       serviceType: true,
+      projectNotes: true,
       intakeData: true,
+      source: true,
+      createdAt: true,
       status: true,
     },
   });
@@ -54,6 +58,10 @@ export async function POST(
     where: { id: lead.id },
     data: { status: "BID_READY" },
   });
+
+  // Same sourceLeadId as the intake-complete send. FieldMetriQ returns duplicate:true
+  // when this lead was already created, so a repeat does not open a second lead.
+  await deliverIntakeLead(lead, visionPageUrl(lead.id));
 
   // Fire-and-forget notifications (don't block the response)
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? SITE.url;

@@ -428,6 +428,12 @@ CTA section:
 
 ---
 
+## FieldMetriQ lead handoff
+
+Public quote requests (`POST /api/quote` after `saveLead`), completed intake submissions (`PATCH /api/intake/[token]` with `INTAKE_COMPLETE`), and bid requests (`POST /api/intake/[token]/bid-request`) send one `lead.created` event per save. A later bid request repeats the same intake lead id as `sourceLeadId`, which FieldMetriQ accepts as a duplicate instead of a second lead. The homeowner response does not depend on that call. Existing quote, intake, and bid emails are unchanged. Inbound `POST /api/webhooks/fieldmetriq` is unchanged.
+
+Contract and env vars: see the lead-intake section of `FM_WEBHOOK_STATE.md`. Names: `FIELDMETRIQ_LEAD_INTAKE_URL`, `SDNV_WEBHOOK_SECRET`.
+
 ## Environment Variables Required
 
 ```env
@@ -445,6 +451,8 @@ TWILIO_AUTH_TOKEN=
 TWILIO_PHONE_NUMBER=
 NEXT_PUBLIC_BASE_URL=https://sublimedesignnv.com
 INTAKE_LINK_EXPIRY_DAYS=30         # token expiration (optional)
+FIELDMETRIQ_LEAD_INTAKE_URL=
+SDNV_WEBHOOK_SECRET=
 ```
 
 ---

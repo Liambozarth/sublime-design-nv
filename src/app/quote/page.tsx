@@ -11,6 +11,9 @@ import {
   applyQuotePrefillToForm,
   BUDGET_OPTIONS,
   QUOTE_DEFAULT_FORM,
+  SMS_CONSENT_PRIVACY_LABEL,
+  SMS_CONSENT_TERMS_LABEL,
+  SMS_CONSENT_TEXT_BEFORE_LINKS,
   TIMELINE_OPTIONS,
   getQuoteVisibleContext,
   validateQuoteFields,
@@ -580,6 +583,7 @@ export default function QuotePage() {
           ctaLabel: quoteContext.ctaLabel || undefined,
           honeypot: honeypot || undefined,
           startedAt,
+          pageUrl: window.location.href,
         }),
       });
 
@@ -770,16 +774,14 @@ export default function QuotePage() {
                   />
                   <p className="text-sm leading-6 text-charcoal">
                     <label htmlFor="smsConsent" className="cursor-pointer">
-                      Yes, text me about my quote and project updates from Sublime Design NV at the
-                      number above. Message frequency varies. Msg & data rates may apply. Reply STOP
-                      to opt out, HELP for help. See our
+                      {SMS_CONSENT_TEXT_BEFORE_LINKS}
                     </label>{" "}
                     <Link href="/privacy" className="font-semibold text-red hover:underline">
-                      Privacy Policy
+                      {SMS_CONSENT_PRIVACY_LABEL}
                     </Link>{" "}
                     and{" "}
                     <Link href="/terms" className="font-semibold text-red hover:underline">
-                      Terms
+                      {SMS_CONSENT_TERMS_LABEL}
                     </Link>
                     .
                   </p>

@@ -53,6 +53,7 @@ export type QuoteRequestPayload = QuoteFormFields & {
   ctaLabel?: string;
   honeypot?: string;
   startedAt?: number;
+  pageUrl?: string;
 };
 
 export type QuoteValidatedPayload = {
@@ -70,6 +71,7 @@ export type QuoteValidatedPayload = {
   ctaLabel?: string;
   startedAt?: number;
   honeypot?: string;
+  pageUrl?: string;
 };
 
 const ACTIVE_SERVICE_SLUGS = new Set(ACTIVE_SERVICES.map((service) => service.slug));
@@ -81,6 +83,13 @@ const MIN_SUBMIT_MS = 1500;
 const MAX_LOCATION_LENGTH = 120;
 const MAX_MESSAGE_LENGTH = 2000;
 const MAX_NAME_LENGTH = 120;
+
+/** Visible copy of the optional SMS checkbox on /quote, links included as text. */
+export const SMS_CONSENT_TEXT_BEFORE_LINKS =
+  "Yes, text me about my quote and project updates from Sublime Design NV at the number above. Message frequency varies. Msg & data rates may apply. Reply STOP to opt out, HELP for help. See our";
+export const SMS_CONSENT_PRIVACY_LABEL = "Privacy Policy";
+export const SMS_CONSENT_TERMS_LABEL = "Terms";
+export const SMS_CONSENT_CHECKBOX_TEXT = `${SMS_CONSENT_TEXT_BEFORE_LINKS} ${SMS_CONSENT_PRIVACY_LABEL} and ${SMS_CONSENT_TERMS_LABEL}.`;
 
 export const QUOTE_DEFAULT_FORM: QuoteFormFields = {
   firstName: "",
@@ -140,6 +149,19 @@ export function sanitizePath(value: unknown) {
 
 function sanitizeBoolean(value: unknown) {
   return value === true;
+}
+
+function sanitizePageUrl(value: unknown) {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim().slice(0, 2000);
+  if (!trimmed) return undefined;
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return undefined;
+    return url.toString();
+  } catch {
+    return undefined;
+  }
 }
 
 function sanitizePhotoUrls(value: unknown) {
@@ -236,6 +258,7 @@ export function normalizeQuoteRequestPayload(payload: unknown): QuoteValidatedPa
     ctaLabel: sanitizeShortText(body.ctaLabel, 60) || undefined,
     honeypot: sanitizeShortText(body.honeypot, 120) || undefined,
     startedAt: typeof body.startedAt === "number" && Number.isFinite(body.startedAt) ? body.startedAt : undefined,
+    pageUrl: sanitizePageUrl(body.pageUrl),
   };
 }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { ACTIVE_SERVICES } from "@/content/services";
+import { sendQuoteLeadToFieldMetriq } from "@/lib/fieldmetriq/sendLead";
 import { saveLead } from "@/lib/leads";
 import { SITE } from "@/lib/constants";
 import { getBusinessSettings } from "@/lib/settings";
@@ -441,6 +442,27 @@ export async function POST(request: Request) {
       projectTitle: normalized.projectTitle,
       projectSlug: normalized.projectSlug,
       areaSlug: normalized.areaSlug,
+      utmSource: normalized.utmSource,
+      utmMedium: normalized.utmMedium,
+      utmCampaign: normalized.utmCampaign,
+      referrer: normalized.referrer,
+    });
+
+    await sendQuoteLeadToFieldMetriq({
+      leadId,
+      submittedAt: new Date().toISOString(),
+      firstName: fields.firstName,
+      lastName: fields.lastName,
+      email: fields.email,
+      phone: fields.phone,
+      smsConsent: fields.smsConsent,
+      service: fields.service,
+      location: fields.location,
+      timeline: fields.timeline,
+      budget: fields.budget,
+      message: fields.message,
+      photoUrls: normalized.photoUrls,
+      pageUrl: normalized.pageUrl,
       utmSource: normalized.utmSource,
       utmMedium: normalized.utmMedium,
       utmCampaign: normalized.utmCampaign,
