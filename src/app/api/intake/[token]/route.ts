@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { deliverIntakeLead, intakePageUrl } from "@/lib/fieldmetriq/sendIntakeLead";
 import { db } from "@/lib/db";
 import { SITE } from "@/lib/constants";
 import { checkRateLimit } from "@/lib/rateLimit";
@@ -172,7 +173,20 @@ export async function PATCH(
 
   const updated = await db.intakeLead.findUnique({
     where: { token },
-    select: { id: true, firstName: true, lastName: true, phone: true, email: true, serviceType: true, intakeData: true, status: true, visionStatus: true },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      phone: true,
+      email: true,
+      serviceType: true,
+      projectNotes: true,
+      intakeData: true,
+      source: true,
+      createdAt: true,
+      status: true,
+      visionStatus: true,
+    },
   });
 
   // Notify Tyler when intake is complete
@@ -180,6 +194,7 @@ export async function PATCH(
     notifyTylerIntakeComplete(updated).catch((err) =>
       console.error("[intake-patch] failed to send Tyler notification:", err instanceof Error ? err.message : err),
     );
+    await deliverIntakeLead(updated, intakePageUrl(token, updated.source));
   }
 
   return NextResponse.json({ ok: true, lead: { id: updated?.id, status: updated?.status, visionStatus: updated?.visionStatus } });

@@ -4,6 +4,55 @@
 **Commit at investigation:** `7571974`
 **Status:** Of the **2 new v1 outbound events** the contract requires SDNV to send (`palette.revised`, `selection.changed`), **0 are implemented** — and the upstream domain (palette / selection entities, designer publish action) doesn't exist on SDNV either. Of the **1 existing inbound event** (`job.completed`), the receiver is **working but on the v0 auth scheme**; whether v1 conventions retroactively apply is a contract-ambiguity question. The `/api/paint-colors` proxy is **fully working**.
 
+## Lead intake (SDNV → FieldMetriQ) — implemented
+
+This channel is separate from the palette webhook contract below and from the inbound `job.completed` receiver. Do not reuse the palette URL or the `X-Webhook-*` headers for leads. Inbound `POST /api/webhooks/fieldmetriq` is unchanged.
+
+Sender: `src/lib/fieldmetriq/sendLead.ts`, called after `saveLead` in `POST /api/quote`, when an intake submission is saved as `INTAKE_COMPLETE`, and when a bid is requested. Posting the same saved lead id again is safe: FieldMetriQ treats a repeated `sourceLeadId` as a duplicate.
+
+| | |
+|---|---|
+| Method / URL | `POST ${FIELDMETRIQ_LEAD_INTAKE_URL}` (production: `https://fieldmetriq.com/api/partner/v1/sdnv/leads`) |
+| Content-Type | `application/json` |
+| `X-SDNV-Timestamp` | Unix seconds |
+| `X-SDNV-Signature` | `sha256=` plus the hex HMAC-SHA256 of `timestamp + "." + rawBody`, using `SDNV_WEBHOOK_SECRET`. The signed string is the exact body bytes sent. |
+| Success | `201` created, or `200` with `duplicate: true` for a repeated `sourceLeadId` |
+| Failure | `4xx` on bad data or signature (no retry). Network errors and `5xx` retry once. |
+| Homeowner request | Does not fail the quote or intake response. Uses Next `after` or Vercel `waitUntil` when that API is present; otherwise the call is awaited with a 5s timeout. Unset `FIELDMETRIQ_LEAD_INTAKE_URL` or `SDNV_WEBHOOK_SECRET` skips the send with one log line. |
+
+```json
+{
+  "event": "lead.created",
+  "source": "sublime-website",
+  "sourceLeadId": "<saved lead id>",
+  "submittedAt": "<ISO-8601>",
+  "lead": {
+    "firstName": "",
+    "lastName": "",
+    "email": "",
+    "phone": "",
+    "smsConsent": false,
+    "smsConsentText": null,
+    "service": "",
+    "city": "",
+    "timeline": "",
+    "budget": "",
+    "message": "",
+    "photoUrls": [],
+    "pageUrl": "",
+    "utm": null
+  }
+}
+```
+
+Mapping choices inside that shape (the keys above are the contract):
+
+- Quote `service`, `timeline`, and `budget` are the form's display labels (`barn-doors` → `Barn Doors`, `asap` → `As soon as possible`). Intake sends the intake service label plus the timeline/budget strings the intake form stored.
+- Quote `city` is the location field. Intake does not collect a city, so `city` is `""` and the room/space is included in `message`.
+- Quote `smsConsent` is the checkbox value. `smsConsentText` is the exact checkbox sentence shown on `/quote` (Privacy Policy and Terms included as text), whether or not the box was checked. Intake has no SMS checkbox, so `smsConsent` is `false` and `smsConsentText` is `null`.
+- `utm` is `{ source, medium, campaign, referrer }` with only the keys that were present, or `null`.
+- `source` stays `sublime-website` for kiosk and intake leads as well.
+
 ---
 
 ## Contract summary
@@ -85,7 +134,7 @@ Contract does **not** specify what SDNV-side field provides `sdnvProjectId` — 
 | [`src/app/api/paint-colors/route.ts`](src/app/api/paint-colors/route.ts) | Outbound proxy: `GET /api/paint-colors?q=&brand=&limit=`. CORS allow-list pinned to FM origins (`https://fieldmetriq.com`, `https://www.fieldmetriq.com`, localhost dev). | **Yes** — bound at `GET/OPTIONS /api/paint-colors`. |
 | `.env.example` | Declares `FIELDMETRIQ_WEBHOOK_SECRET` (line 38). | **Yes** — read at [`webhooks/fieldmetriq/route.ts:51`](src/app/api/webhooks/fieldmetriq/route.ts#L51). |
 
-**No other FM-related code exists in `src/`, `scripts/`, or `prisma/`.** Specifically:
+The lead-intake sender described at the top of this file is implemented (`src/lib/fieldmetriq/sendLead.ts`). Beyond that sender and the two routes above, the palette investigation still holds: **no palette outbound code exists in `src/`, `scripts/`, or `prisma/`.** Specifically:
 - No outbound webhook sender (no `emitFM`, no `sendToFieldMetriq`, no `webhooks/sdnv/` directory).
 - No HMAC signing helper (only the verifier exists, inline in the receiver).
 - No `sdnvProjectId` / `sdnvItemId` columns in `prisma/schema.prisma`.
@@ -129,8 +178,9 @@ Whether these divergences need fixing depends on Contract Gap #2 (v1-applies-ret
 | Variable | In `.env.example`? | Used in code? | Documented value? |
 |---|---|---|---|
 | `FIELDMETRIQ_WEBHOOK_SECRET` | Yes ([line 38](.env.example)) | Yes — [`webhooks/fieldmetriq/route.ts:51`](src/app/api/webhooks/fieldmetriq/route.ts#L51) | Yes (comment block lines 35–37) |
-| `SDNV_WEBHOOK_SECRET` | **No** | **No** | **No** |
-| `FIELDMETRIQ_WEBHOOK_URL` / outbound URL | **No** | **No** | **No** |
+| `SDNV_WEBHOOK_SECRET` | Yes (lead intake) | Yes — `src/lib/fieldmetriq/sendLead.ts` | Signs `X-SDNV-Signature` for `lead.created`. Palette outbound signing is still not implemented. |
+| `FIELDMETRIQ_LEAD_INTAKE_URL` | Yes | Yes — `src/lib/fieldmetriq/sendLead.ts` | Production value `https://fieldmetriq.com/api/partner/v1/sdnv/leads`. |
+| `FIELDMETRIQ_WEBHOOK_URL` / palette outbound URL | **No** | **No** | Palette channel still unimplemented. |
 
 The hardcoded outbound URL would be `https://fieldmetriq.com/api/webhooks/sdnv/palette` per contract — should still live in an env var for staging/dev/prod parity.
 
